@@ -1,68 +1,91 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2685.3">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 10.7px 0.0px; font: 16.0px Helvetica; -webkit-text-stroke: #000000}
-    span.s1 {font-kerning: none}
-    span.s2 {font: 16.0px 'Songti TC'; font-kerning: none}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>婚禮線上祝福</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f9f4f4; display: flex; justify-content: center; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { color: #d63384; text-align: center; margin-bottom: 25px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #666; font-size: 14px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 8px; box-sizing: border-box; background-color: #fdfdfd; }
+        input[readonly] { background-color: #f5f5f5; color: #888; cursor: not-allowed; }
+        button { width: 100%; padding: 15px; background-color: #d63384; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:active { background-color: #b02a6a; }
+        #loading { text-align: center; color: #d63384; }
+    </style>
 </head>
 <body>
-<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
-<p class="p1"><span class="s1">&lt;html&gt;</span></p>
-<p class="p1"><span class="s1">&lt;head&gt;</span></p>
-<p class="p1"><span class="s1">    &lt;meta charset="UTF-8"&gt;</span></p>
-<p class="p1"><span class="s1">    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</span></p>
-<p class="p1"><span class="s1">    &lt;title&gt;</span><span class="s2">婚禮線上祝福</span><span class="s1">&lt;/title&gt;</span></p>
-<p class="p1"><span class="s1">    &lt;script src="https://static.line-scdn.net/liff/edge/2/sdk.js"&gt;&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1">    &lt;style&gt;</span></p>
-<p class="p1"><span class="s1">        body { font-family: sans-serif; padding: 20px; background-color: #f9f4f4; }</span></p>
-<p class="p1"><span class="s1">        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }</span></p>
-<p class="p1"><span class="s1">        h2 { color: #d63384; text-align: center; }</span></p>
-<p class="p1"><span class="s1">        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }</span></p>
-<p class="p1"><span class="s1">        button { width: 100%; padding: 12px; background-color: #d63384; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }</span></p>
-<p class="p1"><span class="s1">    &lt;/style&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
-<p class="p1"><span class="s1">&lt;body&gt;</span></p>
-<p class="p1"><span class="s1">    &lt;div class="card"&gt;</span></p>
-<p class="p1"><span class="s1">        &lt;h2&gt;</span><span class="s2">送上祝福</span><span class="s1">&lt;/h2&gt;</span></p>
-<p class="p1"><span class="s1">        &lt;input type="text" id="name" placeholder="</span><span class="s2">你的大名</span><span class="s1">" required&gt;</span></p>
-<p class="p1"><span class="s1">        &lt;textarea id="message" rows="4" placeholder="</span><span class="s2">想對新人說的話</span><span class="s1">..." required&gt;&lt;/textarea&gt;</span></p>
-<p class="p1"><span class="s1">        &lt;button onclick="sendBlessing()"&gt;</span><span class="s2">送出祝福</span><span class="s1">&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1">    &lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"> </span></p>
-<p class="p1"><span class="s1">    &lt;script&gt;</span></p>
-<p class="p1"><span class="s1">        // </span><span class="s2">初始化</span><span class="s1"> LIFF</span></p>
-<p class="p1"><span class="s1">        liff.init({ liffId: "2008922628-n0ex971B" }).then(() =&gt; {</span></p>
-<p class="p1"><span class="s1">            if (!liff.isLoggedIn()) { liff.login(); }</span></p>
-<p class="p1"><span class="s1">        });</span></p>
-<p class="p1"><span class="s1"> </span></p>
-<p class="p1"><span class="s1">        async function sendBlessing() {</span></p>
-<p class="p1"><span class="s1">            const name = document.getElementById('name').value;</span></p>
-<p class="p1"><span class="s1">            const message = document.getElementById('message').value;</span></p>
-<p class="p1"><span class="s1">            const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec"; // </span><span class="s2">貼上你的</span><span class="s1"> GAS URL</span></p>
-<p class="p1"><span class="s1"> </span></p>
-<p class="p1"><span class="s1">            if (!name || !message) return alert("</span><span class="s2">請填寫姓名與祝福語</span><span class="s1">");</span></p>
-<p class="p1"><span class="s1"> </span></p>
-<p class="p1"><span class="s1">            const response = await fetch(gasUrl, {</span></p>
-<p class="p1"><span class="s1">                method: "POST",</span></p>
-<p class="p1"><span class="s1">                body: JSON.stringify({ name, message })</span></p>
-<p class="p1"><span class="s1">            });</span></p>
-<p class="p1"><span class="s1"> </span></p>
-<p class="p1"><span class="s1">            if (response.ok) {</span></p>
-<p class="p1"><span class="s1">                alert("</span><span class="s2">祝福已送到！謝謝你</span><span class="s1">");</span></p>
-<p class="p1"><span class="s1">                liff.closeWindow(); // </span><span class="s2">成功後自動關閉視窗</span></p>
-<p class="p1"><span class="s1">            } else {</span></p>
-<p class="p1"><span class="s1">                alert("</span><span class="s2">傳送失敗，請稍後再試</span><span class="s1">");</span></p>
-<p class="p1"><span class="s1">            }</span></p>
-<p class="p1"><span class="s1">        }</span></p>
-<p class="p1"><span class="s1">    &lt;/script&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
+    <div class="card" id="form-container" style="display:none;">
+        <h2>送上祝福</h2>
+        <div class="input-group">
+            <label>您的 LINE 暱稱</label>
+            <input type="text" id="name" readonly>
+        </div>
+        <div class="input-group">
+            <label>想對新人說的話</label>
+            <textarea id="message" rows="5" placeholder="在此輸入您的祝福..." required></textarea>
+        </div>
+        <button onclick="sendBlessing()">送出祝福</button>
+    </div>
+    
+    <div id="loading">載入中，請稍候...</div>
+
+    <script>
+        const liffId = "2008922628-n0ex971B"; // 填入你的 LIFF ID
+        const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec"; // 填入你的 GAS 網址
+
+        // 初始化 LIFF
+        async function main() {
+            try {
+                await liff.init({ liffId: liffId });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    const profile = await liff.getProfile();
+                    document.getElementById('name').value = profile.displayName;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('form-container').style.display = 'block';
+                }
+            } catch (err) {
+                console.error("LIFF 初始化失敗", err);
+            }
+        }
+
+        async function sendBlessing() {
+            const name = document.getElementById('name').value;
+            const message = document.getElementById('message').value;
+
+            if (!message) return alert("請輸入祝福語內容");
+
+            // 顯示傳送中狀態
+            const btn = document.querySelector('button');
+            btn.innerText = "傳送中...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(gasUrl, {
+                    method: "POST",
+                    body: JSON.stringify({ name: name, message: message })
+                });
+
+                if (response.ok) {
+                    alert("祝福已收到！謝謝你 " + name);
+                    liff.closeWindow(); // 成功後自動關閉視窗
+                } else {
+                    throw new Error("API 回應錯誤");
+                }
+            } catch (err) {
+                alert("傳送失敗，請稍後再試");
+                btn.innerText = "重新送出";
+                btn.disabled = false;
+            }
+        }
+
+        main();
+    </script>
 </body>
 </html>
