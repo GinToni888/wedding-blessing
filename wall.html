@@ -3,158 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maggie's Wedding Wall</title>
+    <title>Maggie's Wedding Wall - Reconstruction</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
-        :root {
-            --bg-cream: #fdfaf5;
-            --glass-white: rgba(255, 255, 255, 0.7);
-        }
-
+        /* --- 1. 背景與重置 --- */
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            background-color: var(--bg-cream);
             overflow: hidden;
+            background-color: #fdfaf5; /* 奶油底色 */
             font-family: "STSong", "NSimSun", serif;
         }
 
-        /* 背景與綠植圖層 */
-        #bg-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -10;
-        }
-
+        /* 背景圖片：直接釘死在底層 */
         .bg-img {
             position: fixed;
-            z-index: -5;
+            z-index: 1; /* 設為 1，稍後把內容設為 10 */
             pointer-events: none;
-            opacity: 1;
-            /* 修正：確保圖片維持比例且不變形 */
-            object-fit: contain;
+            opacity: 1; /* 先設為 1，確認看得到再調暗 */
         }
+        .plant-tl { top: -5%; left: -5%; width: 45vw; max-width: 800px; }
+        .plant-br { bottom: -5%; right: -5%; width: 40vw; max-width: 700px; }
 
-        /* 根據妳的檔案路徑設定位置 */
-        .plant-tl { top: -2%; left: -2%; width: 40vw; max-width: 700px; }
-        .plant-br { bottom: -2%; right: -2%; width: 35vw; max-width: 600px; }
-
-        /* 主內容容器 */
+        /* --- 2. 內容容器：必須完全透明 --- */
         #app-wrapper {
-            position: relative;
+            position: absolute;
+            top: 0; left: 0;
             width: 100vw; height: 100vh;
-            perspective: 1200px;
-            z-index: 1;
+            background: transparent; /* 重要：不能有顏色 */
+            z-index: 10; /* 高於背景圖 */
+            perspective: 1000px;
         }
 
-        /* 磨砂玻璃卡片 (絕對置中修復) */
+        /* --- 3. 磨砂玻璃卡片：真正的置中 --- */
         .blessing-card {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            /* 關鍵：使用 transform 結合 GSAP 確保 100% 居中 */
+            /* 置中定位 */
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
+            
             width: 650px;
             padding: 60px 45px;
             box-sizing: border-box;
-            background: var(--glass-white);
+            
+            /* 玻璃質感 */
+            background: rgba(255, 255, 255, 0.7);
             -webkit-backdrop-filter: blur(20px) saturate(130%);
             backdrop-filter: blur(20px) saturate(130%);
             border: 1px solid rgba(255, 255, 255, 0.9);
             border-radius: 35px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            
             text-align: center;
-            opacity: 0;
-            transform-style: preserve-3d;
+            opacity: 0; /* 初始由 GSAP 控制 */
         }
 
         .card-name {
-            font-size: 1.6rem; color: #7a8a66; margin-bottom: 25px; 
-            font-weight: bold; letter-spacing: 0.15em;
+            font-size: 1.6rem; color: #7a8a66; margin-bottom: 25px; font-weight: bold;
         }
         .card-content {
-            font-size: 1.15rem; color: #333; line-height: 2; 
-            letter-spacing: 0.08em; white-space: pre-line;
+            font-size: 1.15rem; color: #333; line-height: 2; white-space: pre-line;
         }
 
         #status-bar {
             position: fixed; bottom: 15px; left: 15px;
-            font-size: 12px; color: rgba(122, 138, 102, 0.4);
+            font-size: 12px; color: rgba(0,0,0,0.2);
             z-index: 100;
         }
     </style>
 </head>
 <body>
 
-    <div id="bg-layer"></div>
-    <img src="plant-top-left.png" class="bg-img plant-tl" alt="">
-    <img src="plant-bottom-right.png" class="bg-img plant-br" alt="">
+    <img src="plant-top-left.png" class="bg-img plant-tl" alt="BG-TL">
+    <img src="plant-bottom-right.png" class="bg-img plant-br" alt="BG-BR">
 
     <div id="app-wrapper">
         <div id="card-container"></div>
     </div>
 
-    <div id="status-bar">正在載入婚禮祝福...</div>
+    <div id="status-bar">正在載入祝福語...</div>
 
     <script>
-        let messages = [];
+        // --- 核心邏輯：移植 test.html 的成功基因 ---
+        let messages = [
+            {name: "Maggie & Stanley", content: "歡迎來到我們的婚禮！\n在此留下您的祝福。", status: "ok"}
+        ];
         let currentIndex = 0;
         const GAS_URL = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
 
-        async function init() {
-            await updateData();
-            // 防呆：若沒抓到資料，顯示歡迎詞
-            if (messages.length === 0) {
-                messages = [{name: "Maggie & Stanley", content: "歡迎來到我們的婚禮！\n在此留下您的祝福。", status: "ok"}];
-            }
-            startLoop();
-        }
-
         async function updateData() {
             try {
-                // 強制跳過快取
-                const r = await fetch(`${GAS_URL}?t=${Date.now()}`);
-                const d = await r.json();
-                const filtered = d.filter(m => m && m.status && m.status.toLowerCase().trim() === 'ok');
+                const response = await fetch(`${GAS_URL}?t=${Date.now()}`);
+                const data = await response.json();
+                
+                // 檢查抓到的資料
+                const filtered = data.filter(item => item && item.status && item.status.toLowerCase().trim() === 'ok');
+                
                 if (filtered.length > 0) {
                     messages = filtered;
-                    document.getElementById('status-bar').innerText = `已載入 ${messages.length} 則祝福`;
+                    document.getElementById('status-bar').innerText = `已同步 ${messages.length} 則祝福`;
                 }
-            } catch (e) {
-                console.error("Sync error");
-                document.getElementById('status-bar').innerText = "連線不穩定，顯示預載祝福中...";
+            } catch (error) {
+                console.error("同步失敗:", error);
+                document.getElementById('status-bar').innerText = "連線失敗，目前顯示本地資料";
             }
         }
 
         function startLoop() {
             const container = document.getElementById('card-container');
-            // 確保索引不溢出
-            if (currentIndex >= messages.length) currentIndex = 0;
+            if (messages.length === 0) return;
             
+            // 確保 index 正常
+            if (currentIndex >= messages.length) currentIndex = 0;
             const msg = messages[currentIndex];
+
+            // 建立卡片
             const card = document.createElement('div');
             card.className = 'blessing-card';
             card.innerHTML = `<div class="card-name">${msg.name}</div><div class="card-content">${msg.content}</div>`;
             container.appendChild(card);
 
+            // GSAP 動畫：3D 進退場
             const tl = gsap.timeline({
                 onComplete: () => {
                     card.remove();
                     currentIndex = (currentIndex + 1) % messages.length;
-                    startLoop();
+                    startLoop(); // 無窮循環
                 }
             });
 
-            // 3D 往後縮小進場退場 (Maggie 指定款)
             tl.fromTo(card, 
-                { opacity: 0, scale: 0.8, z: -200, xPercent: -50, yPercent: -50, left: "50%", top: "50%" }, 
-                { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power2.out" }
+                { opacity: 0, scale: 0.8, z: -200, xPercent: -50, yPercent: -50, top: "50%", left: "50%" }, 
+                { opacity: 1, scale: 1, z: 0, duration: 1.5, ease: "power2.out" }
             )
             .to(card, { opacity: 1, duration: 6 }) 
-            .to(card, { opacity: 0, scale: 0.7, z: -400, duration: 1.5, ease: "power2.in" });
+            .to(card, { opacity: 0, scale: 0.7, z: -400, duration: 1.2, ease: "power2.in" });
         }
 
-        window.onload = init;
-        setInterval(updateData, 60000); 
+        // 啟動點：先開始跑 loop，不要等 fetch
+        window.onload = () => {
+            startLoop(); // 先用預設資料跑
+            updateData(); // 背景默默去抓資料
+            setInterval(updateData, 60000); // 之後每一分鐘抓一次
+        };
     </script>
 </body>
 </html>
