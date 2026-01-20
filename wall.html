@@ -2,147 +2,91 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maggie's Wedding Wall - Content Fix</title>
+    <title>Maggie's Wedding Wall - Master Stable</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
-        body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            overflow: hidden;
-            background-color: #fdfaf5;
-            font-family: "STSong", "NSimSun", serif;
-        }
-
-        /* 背景圖片層 */
-        .bg-img {
-            position: fixed;
-            z-index: 1;
-            pointer-events: none;
-            opacity: 1;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #fdfaf5; font-family: "STSong", "NSimSun", serif; }
+        
+        /* 1. 背景強制顯示 */
+        #bg-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .bg-img { position: absolute; z-index: 2; opacity: 1; pointer-events: none; }
         .plant-tl { top: -5%; left: -5%; width: 45vw; max-width: 800px; }
         .plant-br { bottom: -5%; right: -5%; width: 40vw; max-width: 700px; }
 
-        /* 內容容器 */
-        #app-wrapper {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: transparent;
-            z-index: 10;
-            perspective: 1000px;
+        /* 2. 內容容器透明化 */
+        #app-wrapper { position: relative; width: 100vw; height: 100vh; z-index: 10; background: transparent; perspective: 1000px; }
+        
+        /* 3. 磨砂玻璃卡片 */
+        .blessing-card { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 650px; padding: 60px 45px; box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.75);
+            -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 35px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1); text-align: center; opacity: 0; 
         }
-
-        /* 磨砂玻璃卡片 */
-        .blessing-card {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 650px;
-            padding: 60px 45px;
-            box-sizing: border-box;
-            background: rgba(255, 255, 255, 0.7);
-            -webkit-backdrop-filter: blur(20px) saturate(130%);
-            backdrop-filter: blur(20px) saturate(130%);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            border-radius: 35px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            opacity: 0;
-        }
-
-        .card-name {
-            font-size: 1.6rem; color: #7a8a66; margin-bottom: 25px; font-weight: bold;
-        }
-        .card-content {
-            font-size: 1.15rem; color: #333; line-height: 2; white-space: pre-line;
-        }
-
-        #status-bar {
-            position: fixed; bottom: 15px; left: 15px;
-            font-size: 12px; color: rgba(0,0,0,0.3);
-            z-index: 100;
-        }
+        .card-name { font-size: 1.6rem; color: #7a8a66; margin-bottom: 25px; font-weight: bold; }
+        .card-content { font-size: 1.15rem; color: #333; line-height: 2; white-space: pre-line; }
+        #status-bar { position: fixed; bottom: 15px; left: 15px; font-size: 12px; color: rgba(0,0,0,0.3); z-index: 100; }
     </style>
 </head>
 <body>
 
-    <img src="plant-top-left.png" class="bg-img plant-tl" alt="">
-    <img src="plant-bottom-right.png" class="bg-img plant-br" alt="">
+    <div id="bg-container">
+        <img src="plant-top-left.png" class="bg-img plant-tl" alt="">
+        <img src="plant-bottom-right.png" class="bg-img plant-br" alt="">
+    </div>
 
     <div id="app-wrapper">
         <div id="card-container"></div>
     </div>
 
-    <div id="status-bar">正在檢查雲端資料...</div>
+    <div id="status-bar">系統初始化中...</div>
 
     <script>
-        // 預設測試資料
-        let messages = [
-            { name: "Maggie & Stanley", content: "歡迎來到我們的婚禮！\n正在抓取您的祝福...", status: "ok" }
-        ];
+        // --- 核心改動：直接抓取，不再做複雜過濾 ---
+        let messages = [{ name: "Maggie & Stanley", content: "歡迎來到我們的婚禮！", status: "ok" }];
         let currentIndex = 0;
         const GAS_URL = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
 
-        // 自動偵測欄位名稱的函式
-        function findValue(obj, keywords) {
-            const key = Object.keys(obj).find(k => 
-                keywords.some(kw => k.toLowerCase().includes(kw))
-            );
-            return key ? obj[key] : null;
-        }
-
         async function updateData() {
-            const statusBar = document.getElementById('status-bar');
             try {
                 const response = await fetch(`${GAS_URL}?t=${Date.now()}`);
                 const data = await response.json();
                 
-                // 全自動識別欄位
+                // 採用最寬鬆的過濾：只要有內容就顯示
                 const filtered = data.filter(item => {
-                    const statusVal = findValue(item, ['status', '狀態', '審核']);
-                    return statusVal && statusVal.toString().toLowerCase().trim() === 'ok';
-                }).map(item => ({
-                    name: findValue(item, ['name', '姓名', '稱呼', 'nickname']) || "賓客",
-                    content: findValue(item, ['content', '內容', '訊息', 'message']) || "（無內容）",
-                    status: 'ok'
-                }));
+                    // 自動尋找 'ok'，不論欄位名稱
+                    return Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok');
+                });
 
                 if (filtered.length > 0) {
                     messages = filtered;
-                    statusBar.innerText = `同步成功：已載入 ${messages.length} 則祝福`;
-                } else {
-                    statusBar.innerText = `連線成功，但沒找到標註為 'ok' 的資料 (讀取到 ${data.length} 筆)`;
+                    document.getElementById('status-bar').innerText = `同步成功: 共 ${messages.length} 則祝福`;
                 }
-            } catch (error) {
-                console.error("Fetch Error:", error);
-                statusBar.innerText = "連線失敗：" + error.message;
+            } catch (e) {
+                document.getElementById('status-bar').innerText = "同步中...";
             }
         }
 
-        function startLoop() {
+        function playNext() {
             const container = document.getElementById('card-container');
             if (currentIndex >= messages.length) currentIndex = 0;
             const msg = messages[currentIndex];
 
+            container.innerHTML = ''; 
             const card = document.createElement('div');
             card.className = 'blessing-card';
-            card.innerHTML = `
-                <div class="card-name">${msg.name}</div>
-                <div class="card-content">${msg.content}</div>
-            `;
+            card.innerHTML = `<div class="card-name">${msg.name}</div><div class="card-content">${msg.content}</div>`;
             container.appendChild(card);
 
-            const tl = gsap.timeline({
+            gsap.timeline({
                 onComplete: () => {
-                    card.remove();
                     currentIndex = (currentIndex + 1) % messages.length;
-                    startLoop();
+                    playNext();
                 }
-            });
-
-            tl.fromTo(card, 
+            })
+            .fromTo(card, 
                 { opacity: 0, scale: 0.8, z: -200, xPercent: -50, yPercent: -50, top: "50%", left: "50%" }, 
                 { opacity: 1, scale: 1, z: 0, duration: 1.5, ease: "power2.out" }
             )
@@ -150,11 +94,10 @@
             .to(card, { opacity: 0, scale: 0.7, z: -400, duration: 1.2, ease: "power2.in" });
         }
 
-        window.onload = () => {
-            startLoop(); 
-            updateData(); 
-            setInterval(updateData, 60000); 
-        };
+        // 啟動：先跑動畫，後抓資料
+        playNext();
+        updateData();
+        setInterval(updateData, 60000);
     </script>
 </body>
 </html>
