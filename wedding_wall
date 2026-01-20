@@ -16,22 +16,19 @@
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: var(--cream-bg);
             font-family: "STFangsong", "FangSong", "仿宋", "Adobe Fangsong", serif;
-            cursor: none; /* 隱藏滑鼠 */
+            cursor: default; /* 先恢復滑鼠方便點擊，正式時再設為 none */
         }
 
-        /* 奶油色漸層背景 */
         .background {
             position: fixed; width: 100%; height: 100%;
             background: radial-gradient(circle at center, #ffffff 0%, #fdf5e6 100%);
             z-index: -2;
         }
 
-        /* 綠植裝飾 - 使用更明顯的 SVG */
-        .leaf {
-            position: absolute; fill: var(--sage-green); opacity: 0.3; z-index: -1;
-        }
-        .top-left { top: -50px; left: -50px; width: 400px; transform: rotate(-15deg); }
-        .bottom-right { bottom: -50px; right: -50px; width: 450px; transform: rotate(165deg); }
+        /* 綠植裝飾：強化 SVG 繪製，確保背景不空洞 */
+        .leaf { position: absolute; fill: var(--sage-green); opacity: 0.2; z-index: -1; }
+        .top-left { top: -20px; left: -20px; width: 450px; transform: rotate(-10deg); }
+        .bottom-right { bottom: -20px; right: -20px; width: 500px; transform: rotate(170deg); }
 
         #display-container {
             display: flex; justify-content: center; align-items: center;
@@ -39,75 +36,100 @@
         }
 
         .message-card {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 35px;
-            padding: 50px 70px;
-            max-width: 60%;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 40px;
+            padding: 60px 80px;
+            /* 調整字卡寬度：確保「歡迎參加我們的婚禮」能在一行顯示 */
+            width: 850px; 
+            max-width: 85%;
             text-align: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.03);
-            transition: opacity 1s ease-in-out;
+            box-shadow: 0 25px 50px rgba(125, 140, 120, 0.1);
+            transition: opacity 1.2s ease-in-out;
         }
 
         .sender {
-            font-size: 20px; /* 縮小兩號 */
-            color: var(--sage-green);
-            margin-bottom: 25px;
-            letter-spacing: 0.1em;
+            font-size: 20px; color: var(--sage-green);
+            margin-bottom: 30px; letter-spacing: 0.15em;
         }
 
         .content {
-            font-size: 32px; /* 縮小兩號 (原48px) */
-            line-height: 1.7;
-            color: var(--text-color);
-            margin-bottom: 35px;
+            font-size: 32px; /* 縮小兩號 */
+            line-height: 1.8; color: var(--text-color);
+            margin-bottom: 40px;
+            /* 確保中文顯示優雅 */
+            word-break: keep-all;
         }
 
         .wedding-tag {
             font-family: 'Playfair Display', serif;
-            font-style: italic; font-size: 18px; color: var(--gold);
+            font-style: italic; font-size: 20px; color: var(--gold);
         }
 
-        #fx-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        /* 提示區域：DEBUG 用 */
+        #status-info {
+            position: fixed; bottom: 10px; left: 10px; font-size: 12px; color: #ccc;
+        }
     </style>
 </head>
-<body onclick="this.focus();"> <div class="background"></div>
+<body>
 
-    <svg class="leaf top-left" viewBox="0 0 200 200">
-        <path d="M100,20 C120,50 180,60 180,100 C180,140 120,150 100,180 C80,150 20,140 20,100 C20,60 80,50 100,20" />
-    </svg>
-    <svg class="leaf bottom-right" viewBox="0 0 200 200">
-        <path d="M100,20 C120,50 180,60 180,100 C180,140 120,150 100,180 C80,150 20,140 20,100 C20,60 80,50 100,20" />
-    </svg>
+    <div class="background"></div>
+
+    <svg class="leaf top-left" viewBox="0 0 200 200"><path d="M40,100 Q40,40 100,40 T160,100 Q160,160 100,160 T40,100" /><path d="M10,120 Q10,70 70,70 T130,120 Q130,170 70,170 T10,120" opacity="0.5"/></svg>
+    <svg class="leaf bottom-right" viewBox="0 0 200 200"><path d="M40,100 Q40,40 100,40 T160,100 Q160,160 100,160 T40,100" /><path d="M60,140 Q60,90 120,90 T180,140 Q180,190 120,190 T60,140" opacity="0.5"/></svg>
 
     <div id="display-container">
         <div id="card-target">
             <div class="message-card">
                 <div class="sender">Maggie & Stanley</div>
-                <div class="content">祝福載入中...</div>
-                <div class="wedding-tag">Mandarin Oriental Taipei</div>
+                <div class="content">請先點擊畫面任意處<br>系統將開始連線並啟動空白鍵功能</div>
+                <div class="wedding-tag">April 2026 @ Mandarin Oriental</div>
             </div>
         </div>
     </div>
 
+    <div id="status-info">等待初始化...</div>
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script>
-        const gasUrl = "你的_GAS_網頁應用程式網址"; // 貼上零件 A 的網址
+        // 1. 請在此填入你的 GAS URL
+        const gasUrl = "你的_GAS_部署網址"; 
+        
         let messages = [{ name: "Maggie & Stanley", msg: "歡迎參加我們的婚禮" }];
         let currentIndex = 0;
+        let isFirstLoad = true;
 
-        // 每 10 秒向 Google Sheet 更新一次資料
+        const statusInfo = document.getElementById('status-info');
+
+        // 2. 強化抓取邏輯
         async function fetchMessages() {
+            if (!gasUrl || gasUrl.includes("你的_GAS")) {
+                statusInfo.innerText = "錯誤：尚未設定 GAS 網址";
+                return;
+            }
+
             try {
+                statusInfo.innerText = "正在同步祝福資料...";
                 const response = await fetch(gasUrl);
                 const data = await response.json();
+                
                 if (data && data.length > 0) {
                     messages = data;
+                    statusInfo.innerText = "資料更新成功，共 " + data.length + " 則祝福";
+                    if (isFirstLoad) {
+                        isFirstLoad = false;
+                        rotateMessage(); // 抓到資料後立即更換一次畫面
+                    }
+                } else {
+                    statusInfo.innerText = "資料庫目前為空 (請確認 D 欄是否有 ok)";
                 }
             } catch (err) {
-                console.error("無法讀取資料", err);
+                statusInfo.innerText = "連線失敗：" + err.message;
+                console.error(err);
             }
         }
 
@@ -122,22 +144,22 @@
                     <div class="message-card">
                         <div class="sender">— ${data.name} —</div>
                         <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
-                        <div class="wedding-tag">Love in April 2026</div>
+                        <div class="wedding-tag">M & S Forever Love</div>
                     </div>
                 `;
                 container.style.opacity = 1;
                 currentIndex = (currentIndex + 1) % messages.length;
-            }, 1000);
+            }, 1200);
         }
 
-        // 初始化
-        fetchMessages();
-        setInterval(fetchMessages, 20000); // 每 20 秒背景更新一次資料庫
-        setInterval(rotateMessage, 8000);   // 每 8 秒切換一則顯示
+        // 3. 解決空白鍵與點擊問題
+        document.addEventListener('click', () => {
+            window.focus(); // 確保視窗取得焦點
+            statusInfo.innerText = "視窗已取得焦點，空白鍵已就緒";
+        });
 
-        // 空白鍵監聽 (確保先點擊一下網頁)
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.keyCode === 32) {
                 e.preventDefault();
                 triggerKagamiBiraki();
             }
@@ -148,9 +170,15 @@
                 particleCount: 150,
                 spread: 70,
                 origin: { y: 0.6 },
-                colors: ['#fdf5e6', '#8da086', '#c5a059', '#ffffff']
+                colors: ['#fdf5e6', '#8da086', '#c5a059', '#ffffff'],
+                ticks: 300
             });
         }
+
+        // 定時任務
+        fetchMessages();
+        setInterval(fetchMessages, 20000); // 20秒抓一次資料
+        setInterval(rotateMessage, 8000);   // 8秒換一則
     </script>
 </body>
 </html>
