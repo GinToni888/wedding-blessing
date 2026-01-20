@@ -15,8 +15,9 @@
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: var(--cream-bg);
+            /* 仿宋字型設定 */
             font-family: "STFangsong", "FangSong", "仿宋", "Adobe Fangsong", serif;
-            cursor: default; /* 先恢復滑鼠方便點擊，正式時再設為 none */
+            -webkit-font-smoothing: antialiased;
         }
 
         .background {
@@ -25,10 +26,13 @@
             z-index: -2;
         }
 
-        /* 綠植裝飾：強化 SVG 繪製，確保背景不空洞 */
-        .leaf { position: absolute; fill: var(--sage-green); opacity: 0.2; z-index: -1; }
-        .top-left { top: -20px; left: -20px; width: 450px; transform: rotate(-10deg); }
-        .bottom-right { bottom: -20px; right: -20px; width: 500px; transform: rotate(170deg); }
+        /* 強化綠植背景顯示 */
+        .leaf { 
+            position: absolute; fill: var(--sage-green); opacity: 0.25; z-index: -1; 
+            display: block !important; /* 確保顯示 */
+        }
+        .top-left { top: -40px; left: -40px; width: 500px; transform: rotate(-5deg); }
+        .bottom-right { bottom: -40px; right: -40px; width: 550px; transform: rotate(175deg); }
 
         #display-container {
             display: flex; justify-content: center; align-items: center;
@@ -36,30 +40,29 @@
         }
 
         .message-card {
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 40px;
-            padding: 60px 80px;
-            /* 調整字卡寬度：確保「歡迎參加我們的婚禮」能在一行顯示 */
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 45px;
+            padding: 70px 90px;
+            /* 字卡寬度調整：確保一行能放得下且有餘裕 */
             width: 750px; 
             max-width: 85%;
             text-align: center;
-            box-shadow: 0 25px 50px rgba(125, 140, 120, 0.1);
-            transition: opacity 1.2s ease-in-out;
+            box-shadow: 0 30px 60px rgba(125, 140, 120, 0.08);
+            transition: opacity 1s ease-in-out;
         }
 
         .sender {
             font-size: 20px; color: var(--sage-green);
-            margin-bottom: 30px; letter-spacing: 0.15em;
+            margin-bottom: 35px; letter-spacing: 0.2em;
         }
 
         .content {
-            font-size: 32px; /* 縮小兩號 */
+            font-size: 32px; /* 縮小後的尺寸 */
             line-height: 1.8; color: var(--text-color);
-            margin-bottom: 40px;
-            /* 確保中文顯示優雅 */
+            margin-bottom: 45px;
             word-break: keep-all;
         }
 
@@ -68,75 +71,75 @@
             font-style: italic; font-size: 20px; color: var(--gold);
         }
 
-        /* 提示區域：DEBUG 用 */
         #status-info {
-            position: fixed; bottom: 10px; left: 10px; font-size: 12px; color: #ccc;
+            position: fixed; bottom: 15px; left: 20px; font-size: 13px; color: #bbb;
+            background: rgba(255,255,255,0.6); padding: 5px 10px; border-radius: 5px;
         }
     </style>
 </head>
-<body>
+<body tabindex="0"> <div class="background"></div>
 
-    <div class="background"></div>
-
-    <svg class="leaf top-left" viewBox="0 0 200 200"><path d="M40,100 Q40,40 100,40 T160,100 Q160,160 100,160 T40,100" /><path d="M10,120 Q10,70 70,70 T130,120 Q130,170 70,170 T10,120" opacity="0.5"/></svg>
-    <svg class="leaf bottom-right" viewBox="0 0 200 200"><path d="M40,100 Q40,40 100,40 T160,100 Q160,160 100,160 T40,100" /><path d="M60,140 Q60,90 120,90 T180,140 Q180,190 120,190 T60,140" opacity="0.5"/></svg>
+    <svg class="leaf top-left" viewBox="0 0 200 200">
+        <path d="M50,120 Q30,80 70,40 T130,40 Q170,80 150,120 T50,120" />
+        <path d="M20,150 Q0,110 40,70 T100,70 Q140,110 120,150 T20,150" opacity="0.6" />
+    </svg>
+    <svg class="leaf bottom-right" viewBox="0 0 200 200">
+        <path d="M50,120 Q30,80 70,40 T130,40 Q170,80 150,120 T50,120" />
+        <path d="M60,160 Q40,120 80,80 T140,80 Q180,120 160,160 T60,160" opacity="0.6" />
+    </svg>
 
     <div id="display-container">
         <div id="card-target">
             <div class="message-card">
                 <div class="sender">Maggie & Stanley</div>
-                <div class="content">請先點擊畫面任意處<br>系統將開始連線並啟動空白鍵功能</div>
+                <div class="content">請點擊畫面任何處啟動系統<br>連線成功後將自動開始輪播</div>
                 <div class="wedding-tag">April 2026 @ Mandarin Oriental</div>
             </div>
         </div>
     </div>
 
-    <div id="status-info">等待初始化...</div>
+    <div id="status-info">系統啟動中...</div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script>
-        // 1. 請在此填入你的 GAS URL
+        // --- 設定區 ---
         const gasUrl = "你的_GAS_部署網址"; 
         
         let messages = [{ name: "Maggie & Stanley", msg: "歡迎參加我們的婚禮" }];
         let currentIndex = 0;
-        let isFirstLoad = true;
-
         const statusInfo = document.getElementById('status-info');
 
-        // 2. 強化抓取邏輯
+        // 1. 抓取資料 (加入更強的錯誤捕捉)
         async function fetchMessages() {
             if (!gasUrl || gasUrl.includes("你的_GAS")) {
-                statusInfo.innerText = "錯誤：尚未設定 GAS 網址";
+                statusInfo.innerText = "⚠️ 尚未填寫 GAS 網址";
                 return;
             }
 
             try {
-                statusInfo.innerText = "正在同步祝福資料...";
-                const response = await fetch(gasUrl);
-                const data = await response.json();
+                const response = await fetch(gasUrl, { method: 'GET', mode: 'cors' });
+                if (!response.ok) throw new Error("HTTP 錯誤 " + response.status);
                 
+                const data = await response.json();
                 if (data && data.length > 0) {
                     messages = data;
-                    statusInfo.innerText = "資料更新成功，共 " + data.length + " 則祝福";
-                    if (isFirstLoad) {
-                        isFirstLoad = false;
-                        rotateMessage(); // 抓到資料後立即更換一次畫面
-                    }
+                    statusInfo.innerText = "✅ 同步成功：共 " + data.length + " 則祝福";
                 } else {
-                    statusInfo.innerText = "資料庫目前為空 (請確認 D 欄是否有 ok)";
+                    statusInfo.innerText = "📭 資料庫為空 (請檢查試算表 D 欄是否填寫 ok)";
                 }
             } catch (err) {
-                statusInfo.innerText = "連線失敗：" + err.message;
-                console.error(err);
+                statusInfo.innerText = "❌ 連線失敗：" + err.message + " (預覽模式常見限制)";
+                console.error("Fetch Error:", err);
             }
         }
 
+        // 2. 輪播邏輯 (修正：即使只有一則也嘗試換場動畫)
         function rotateMessage() {
             const container = document.getElementById('card-target');
+            if (messages.length === 0) return;
+
             const data = messages[currentIndex];
-            
             container.style.opacity = 0;
             
             setTimeout(() => {
@@ -149,35 +152,43 @@
                 `;
                 container.style.opacity = 1;
                 currentIndex = (currentIndex + 1) % messages.length;
-            }, 1200);
+            }, 1000);
         }
 
-        // 3. 解決空白鍵與點擊問題
+        // 3. 解決空白鍵監聽 (強化版)
+        function triggerKagamiBiraki() {
+            if (typeof confetti !== 'undefined') {
+                confetti({
+                    particleCount: 180,
+                    spread: 80,
+                    origin: { y: 0.65 },
+                    colors: ['#fdf5e6', '#8da086', '#c5a059', '#ffffff'],
+                    zIndex: 999
+                });
+                statusInfo.innerText = "✨ 鏡開儀式觸發成功！";
+            } else {
+                alert("特效套件尚未載入，請檢查網路連線");
+            }
+        }
+
+        // 強制視窗取得焦點的點擊事件
         document.addEventListener('click', () => {
-            window.focus(); // 確保視窗取得焦點
-            statusInfo.innerText = "視窗已取得焦點，空白鍵已就緒";
+            document.body.focus();
+            statusInfo.innerText = "🎯 視窗已就緒，可使用空白鍵";
         });
 
-        document.addEventListener('keydown', (e) => {
+        // 處理鍵盤事件
+        window.addEventListener('keydown', (e) => {
+            // Safari 有時抓 keyCode，Chrome 抓 code
             if (e.code === 'Space' || e.keyCode === 32) {
                 e.preventDefault();
                 triggerKagamiBiraki();
             }
-        });
+        }, true); // 使用 Capture 模式確保抓到事件
 
-        function triggerKagamiBiraki() {
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#fdf5e6', '#8da086', '#c5a059', '#ffffff'],
-                ticks: 300
-            });
-        }
-
-        // 定時任務
+        // 初始化執行
         fetchMessages();
-        setInterval(fetchMessages, 20000); // 20秒抓一次資料
+        setInterval(fetchMessages, 30000); // 30秒更新一次資料
         setInterval(rotateMessage, 8000);   // 8秒換一則
     </script>
 </body>
