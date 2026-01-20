@@ -8,7 +8,6 @@
         :root {
             --cream-bg: #fdfaf5;
             --sage-green: #7d8c78;
-            --flower-pink: #f8e1e1; /* 奶油色/淡粉色花瓣 */
             --gold: #c5a059;
             --text-color: #4a4a4a;
         }
@@ -16,208 +15,166 @@
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: var(--cream-bg);
+            /* 恢復仿宋體字型 */
             font-family: "STFangsong", "FangSong", "仿宋", "Adobe Fangsong", serif;
-            -webkit-font-smoothing: antialiased;
         }
 
+        /* 背景奶油色與森林光影 */
         .background-layer {
             position: fixed; width: 100%; height: 100%;
             background: radial-gradient(circle at center, #ffffff 0%, #fdf5e6 100%);
-            z-index: -5;
+            z-index: -10;
         }
 
-        /* --- 綠植與開花系統 --- */
-        .forest-container {
-            position: fixed; width: 100%; height: 100%;
-            pointer-events: none; z-index: -1;
+        /* 森林光影：確保顯示在角落 */
+        .forest-glow {
+            position: fixed; width: 700px; height: 700px;
+            background: radial-gradient(circle, var(--sage-green) 0%, transparent 70%);
+            filter: blur(80px); opacity: 0.35; z-index: -5;
+            animation: breathe 10s ease-in-out infinite;
         }
+        .glow-tl { top: -250px; left: -250px; }
+        .glow-br { bottom: -250px; right: -250px; animation-delay: -5s; }
 
-        .leaf-group {
-            position: absolute;
-            fill: var(--sage-green);
-            opacity: 0.6;
-            animation: forestSway 10s ease-in-out infinite;
-        }
-        .top-left { top: -40px; left: -40px; width: 450px; }
-        .bottom-right { bottom: -60px; right: -60px; width: 500px; transform: rotate(180deg); }
+        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.1); opacity: 0.45; } }
 
-        /* 初始隱藏的花朵 */
-        .flower {
-            fill: var(--flower-pink);
-            opacity: 0;
-            transform: scale(0);
-            transition: all 2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .blooming .flower {
-            opacity: 0.8;
-            transform: scale(1);
-        }
-
-        @keyframes forestSway {
-            0%, 100% { transform: rotate(-2deg); }
-            50% { transform: rotate(2deg); }
-        }
-
-        /* --- 蝴蝶系統 --- */
-        .butterfly {
-            position: fixed;
-            width: 20px; height: 20px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 50% 50% 0 50%;
-            pointer-events: none;
-            z-index: 50;
-            filter: blur(1px);
-            display: none; /* 觸發前隱藏 */
-        }
-
-        /* --- 訊息字卡 --- */
+        /* 字卡容器 */
         #display-container {
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; width: 100vw;
+            position: relative; width: 100vw; height: 100vh;
+            perspective: 1000px; /* 增加 3D 景深感 */
         }
+
+        /* --- 信紙頁框設計 --- */
         .message-card {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.7);
-            border-radius: 50px; padding: 60px 100px;
-            width: 950px; text-align: center;
-            box-shadow: 0 30px 60px rgba(125, 140, 120, 0.1);
-            transition: opacity 1.2s ease-in-out;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            
+            /* 還原為信紙矩形，帶微圓角 */
+            border-radius: 8px;
+            background: #ffffff;
+            /* 雙層邊框營造信紙質感 */
+            border: 1px solid #eeeeee;
+            outline: 15px solid rgba(255, 255, 255, 0.4); 
+            
+            padding: 70px 90px;
+            width: 800px; max-width: 85%;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.05);
+            z-index: 10;
         }
+
+        /* 信紙內裝飾線 (可選) */
+        .message-card::after {
+            content: ""; position: absolute;
+            top: 20px; left: 20px; right: 20px; bottom: 20px;
+            border: 1px solid rgba(125, 140, 120, 0.2); /* 淺綠細線框 */
+            pointer-events: none;
+        }
+
         .sender { font-size: 20px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
         .content { font-size: 30px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        #status-info {
-            position: fixed; bottom: 20px; left: 20px; font-size: 13px; color: #aaa;
-            background: rgba(255,255,255,0.7); padding: 5px 15px; border-radius: 20px;
+        /* --- 動畫：進場與退場 --- */
+
+        /* 1. 進場：淡入並微幅放大 */
+        .card-enter { animation: zoomIn 1.5s ease-out forwards; }
+        @keyframes zoomIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
+
+        /* 2. 退場：縮小往後飄動 (向背景移動) */
+        .card-exit { animation: shrinkBack 2.5s ease-in-out forwards; pointer-events: none; z-index: 5 !important; }
+        @keyframes shrinkBack {
+            to { 
+                opacity: 0; 
+                transform: translate(-50%, -50%) scale(0.3) translateZ(-500px); 
+                filter: blur(15px);
+            }
+        }
+
+        #status-bar { position: fixed; bottom: 10px; left: 10px; font-size: 11px; color: #ccc; z-index: 100; }
     </style>
 </head>
-<body onclick="this.focus();">
+<body onclick="window.focus();">
 
     <div class="background-layer"></div>
-
-    <div class="forest-container" id="forest">
-        <svg class="leaf-group top-left" viewBox="0 0 200 200">
-            <circle cx="50" cy="80" r="40" />
-            <circle cx="100" cy="50" r="45" />
-            <circle cx="140" cy="90" r="35" />
-            <circle class="flower" cx="60" cy="70" r="15" />
-            <circle class="flower" cx="120" cy="60" r="20" />
-        </svg>
-
-        <svg class="leaf-group bottom-right" viewBox="0 0 200 200">
-            <circle cx="50" cy="80" r="40" />
-            <circle cx="100" cy="50" r="45" />
-            <circle cx="140" cy="90" r="35" />
-            <circle class="flower" cx="70" cy="60" r="18" />
-            <circle class="flower" cx="130" cy="80" r="12" />
-        </svg>
-    </div>
+    <div class="forest-glow glow-tl"></div>
+    <div class="forest-glow glow-br"></div>
 
     <div id="display-container">
-        <div id="card-target">
-            <div class="message-card">
-                <div class="sender">Maggie & Stanley</div>
-                <div class="content">森林系祝福牆啟動中...<br>請點擊畫面任一處啟動空白鍵功能</div>
-                <div class="wedding-tag">Love at Mandarin Oriental</div>
-            </div>
+        <div class="message-card active-card" id="init-card">
+            <div class="sender">Maggie & Stanley</div>
+            <div class="content">森林祝福牆連線中...<br>點擊畫面啟動後，按空白鍵可啟動特效</div>
+            <div class="wedding-tag">April 2026 @ Mandarin Oriental</div>
         </div>
     </div>
 
-    <div id="status-info">等待資料同步...</div>
+    <div id="status-bar">初始化...</div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
-
         let messages = [];
         let currentIndex = 0;
-        const statusInfo = document.getElementById('status-info');
-        const cardTarget = document.getElementById('card-target');
+        const statusBar = document.getElementById('status-bar');
+        const displayContainer = document.getElementById('display-container');
 
         async function fetchMessages() {
             try {
-                const response = await fetch(`${gasUrl}?t=${new Date().getTime()}`);
-                const data = await response.json();
+                const res = await fetch(`${gasUrl}?t=${Date.now()}`);
+                const data = await res.json();
                 if (data && data.length > 0) {
                     messages = data;
-                    statusInfo.innerText = `✅ 同步成功: ${data.length} 則祝福`;
-                    if (cardTarget.innerText.includes("啟動中")) rotateMessage();
+                    statusBar.innerText = `✅ 同步成功 (${data.length} 則)`;
+                    const initCard = document.getElementById('init-card');
+                    if (initCard && initCard.innerText.includes("連線中")) rotateMessage();
                 }
-            } catch (err) { statusInfo.innerText = "❌ 連線失敗: " + err.message; }
+            } catch (e) { statusBar.innerText = "❌ 連線失敗: " + e.message; }
         }
 
         function rotateMessage() {
             if (messages.length === 0) return;
-            const data = messages[currentIndex];
-            cardTarget.style.opacity = 0;
-            setTimeout(() => {
-                cardTarget.innerHTML = `
-                    <div class="message-card">
-                        <div class="sender">— ${data.name} —</div>
-                        <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
-                        <div class="wedding-tag">Forever Love 2026.04</div>
-                    </div>
-                `;
-                cardTarget.style.opacity = 1;
-                currentIndex = (currentIndex + 1) % messages.length;
-            }, 1000);
-        }
 
-        // --- 鏡開儀式：落槌動作 ---
-        function triggerKagamiBiraki() {
-            // 1. 綠植開花
-            document.getElementById('forest').classList.add('blooming');
-
-            // 2. 蝴蝶飛舞 (使用 GSAP 動畫)
-            spawnButterflies();
-
-            // 3. 金粉花瓣噴發
-            confetti({
-                particleCount: 200, spread: 80, origin: { y: 0.6 },
-                colors: ['#fdf5e6', '#7d8c78', '#c5a059', '#ffffff'],
-                ticks: 300, scalar: 1.2
-            });
-
-            statusInfo.innerText = "✨ 鏡開儀式落槌！蝴蝶飛舞、森林開花 ✨";
-        }
-
-        function spawnButterflies() {
-            for (let i = 0; i < 15; i++) {
-                const b = document.createElement('div');
-                b.className = 'butterfly';
-                b.style.display = 'block';
-                b.style.left = '50%';
-                b.style.top = '60%';
-                document.body.appendChild(b);
-
-                // 隨機飛向四周
-                gsap.to(b, {
-                    x: (Math.random() - 0.5) * window.innerWidth * 1.5,
-                    y: (Math.random() - 1) * window.innerHeight * 1.5,
-                    rotation: Math.random() * 360,
-                    opacity: 0,
-                    duration: 4 + Math.random() * 2,
-                    ease: "power1.out",
-                    onComplete: () => b.remove()
-                });
+            // a. 舊卡片縮小往後退場
+            const oldCard = document.querySelector('.active-card');
+            if (oldCard) {
+                oldCard.classList.remove('active-card');
+                oldCard.classList.add('card-exit');
+                setTimeout(() => { if(oldCard.parentNode) oldCard.parentNode.removeChild(oldCard); }, 2500);
             }
+
+            // b. 新卡片進場
+            const data = messages[currentIndex];
+            const newCard = document.createElement('div');
+            newCard.className = 'message-card active-card card-enter';
+            newCard.innerHTML = `
+                <div class="sender">— ${data.name} —</div>
+                <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
+                <div class="wedding-tag">Forever Love 2026.04</div>
+            `;
+            displayContainer.appendChild(newCard);
+
+            currentIndex = (currentIndex + 1) % messages.length;
         }
 
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space' || e.keyCode === 32) {
                 e.preventDefault();
-                triggerKagamiBiraki();
+                if (window.confetti) {
+                    confetti({
+                        particleCount: 150, spread: 70, origin: { y: 0.6 },
+                        colors: ['#fdf5e6', '#7d8c78', '#c5a059', '#ffffff']
+                    });
+                }
             }
         });
 
         fetchMessages();
-        setInterval(fetchMessages, 20000);
-        setInterval(rotateMessage, 8000);
+        setInterval(fetchMessages, 30000);
+        setInterval(rotateMessage, 9000); // 每 9 秒換一次，讓動畫流暢
     </script>
 </body>
 </html>
