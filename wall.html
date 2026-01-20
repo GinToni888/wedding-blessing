@@ -3,194 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <title>Maggie & Stanley Wedding Wall</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
     <style>
+        /* 基礎設定 */
         :root {
             --cream-bg: #fdfaf5;
             --sage-green: #8da086;
             --gold: #c5a059;
-            --text-color: #555;
         }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: var(--cream-bg);
-            /* 仿宋字型設定 */
-            font-family: "STFangsong", "FangSong", "仿宋", "Adobe Fangsong", serif;
-            -webkit-font-smoothing: antialiased;
+            background-color: var(--cream-bg);
+            font-family: "Microsoft JhengHei", "STFangsong", serif;
+            overflow: hidden;
         }
 
+        /* 奶油色底色 */
         .background {
             position: fixed; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #ffffff 0%, #fdf5e6 100%);
-            z-index: -2;
+            background: linear-gradient(135deg, #ffffff 0%, #fdf5e6 100%);
+            z-index: -10;
         }
 
-        /* 強化綠植背景顯示 */
-        .leaf { 
-            position: absolute; fill: var(--sage-green); opacity: 0.25; z-index: -1; 
-            display: block !important; /* 確保顯示 */
+        /* --- 綠植：改用純 CSS 圓形繪製 --- */
+        .leaf-box {
+            position: fixed;
+            background-color: var(--sage-green);
+            border-radius: 50% 0 50% 0; /* 葉子形狀 */
+            opacity: 0.4;
+            filter: blur(8px);
+            z-index: -1;
+            animation: sway 10s ease-in-out infinite;
         }
-        .top-left { top: -40px; left: -40px; width: 500px; transform: rotate(-5deg); }
-        .bottom-right { bottom: -40px; right: -40px; width: 550px; transform: rotate(175deg); }
 
+        /* 左上角三片葉子 */
+        .l1 { width: 300px; height: 200px; top: -50px; left: -50px; }
+        .l2 { width: 250px; height: 150px; top: 50px; left: -100px; animation-delay: -2s; opacity: 0.3; }
+        
+        /* 右下角三片葉子 */
+        .l3 { width: 350px; height: 250px; bottom: -80px; right: -50px; transform: rotate(180deg); }
+        .l4 { width: 200px; height: 180px; bottom: 50px; right: -80px; animation-delay: -4s; opacity: 0.2; }
+
+        @keyframes sway {
+            0%, 100% { transform: translate(0,0) rotate(0deg); }
+            50% { transform: translate(20px, 10px) rotate(5deg); }
+        }
+
+        /* --- 字卡：確保寬度 --- */
         #display-container {
             display: flex; justify-content: center; align-items: center;
-            height: 100vh; width: 100vw;
+            height: 100vh;
         }
 
         .message-card {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            border-radius: 45px;
-            padding: 70px 90px;
-            /* 字卡寬度調整：確保一行能放得下且有餘裕 */
-            width: 750px; 
-            max-width: 85%;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid white;
+            border-radius: 50px;
+            padding: 60px 80px;
+            width: 900px;
             text-align: center;
-            box-shadow: 0 30px 60px rgba(125, 140, 120, 0.08);
-            transition: opacity 1s ease-in-out;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            transition: opacity 0.8s;
         }
 
-        .sender {
-            font-size: 20px; color: var(--sage-green);
-            margin-bottom: 35px; letter-spacing: 0.2em;
-        }
+        .sender { font-size: 24px; color: var(--sage-green); margin-bottom: 20px; }
+        .content { font-size: 36px; color: #444; line-height: 1.6; }
 
-        .content {
-            font-size: 32px; /* 縮小後的尺寸 */
-            line-height: 1.8; color: var(--text-color);
-            margin-bottom: 45px;
-            word-break: keep-all;
-        }
-
-        .wedding-tag {
-            font-family: 'Playfair Display', serif;
-            font-style: italic; font-size: 20px; color: var(--gold);
-        }
-
-        #status-info {
-            position: fixed; bottom: 15px; left: 20px; font-size: 13px; color: #bbb;
-            background: rgba(255,255,255,0.6); padding: 5px 10px; border-radius: 5px;
+        /* 狀態偵測列 */
+        #debug-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(0,0,0,0.5); color: white;
+            font-size: 12px; padding: 5px 15px; z-index: 999;
         }
     </style>
 </head>
-<body tabindex="0"> <div class="background"></div>
+<body>
 
-    <svg class="leaf top-left" viewBox="0 0 200 200">
-        <path d="M50,120 Q30,80 70,40 T130,40 Q170,80 150,120 T50,120" />
-        <path d="M20,150 Q0,110 40,70 T100,70 Q140,110 120,150 T20,150" opacity="0.6" />
-    </svg>
-    <svg class="leaf bottom-right" viewBox="0 0 200 200">
-        <path d="M50,120 Q30,80 70,40 T130,40 Q170,80 150,120 T50,120" />
-        <path d="M60,160 Q40,120 80,80 T140,80 Q180,120 160,160 T60,160" opacity="0.6" />
-    </svg>
+    <div class="background"></div>
+    
+    <div class="leaf-box l1"></div>
+    <div class="leaf-box l2"></div>
+    <div class="leaf-box l3"></div>
+    <div class="leaf-box l4"></div>
 
     <div id="display-container">
         <div id="card-target">
             <div class="message-card">
-                <div class="sender">Maggie & Stanley</div>
-                <div class="content">請點擊畫面任何處啟動系統<br>連線成功後將自動開始輪播</div>
-                <div class="wedding-tag">April 2026 @ Mandarin Oriental</div>
+                <div class="sender">SYSTEM</div>
+                <div class="content">正在連線資料庫...<br>請確認是否已點擊過畫面</div>
             </div>
         </div>
     </div>
 
-    <div id="status-info">系統啟動中...</div>
+    <div id="debug-bar">初始化中...</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        const gasUrl = "你的_GAS_網址"; // <--- 請務必貼上正確的 exec 網址
+        let messages = [];
+        let currentIndex = 0;
+        const debugBar = document.getElementById('debug-bar');
 
-    // --- 設定區 ---
-const gasUrl = "你的_GAS_部署網址"; 
-
-let messages = []; // 初始設為空，等待抓取
-let currentIndex = 0;
-const statusInfo = document.getElementById('status-info');
-const container = document.getElementById('card-target');
-
-// 1. 強化抓取邏輯 (加入防快取參數)
-async function fetchMessages() {
-    try {
-        // 在網址後面加上時間戳記，強迫瀏覽器每次都抓最新的資料
-        const timestamp = new Date().getTime();
-        const response = await fetch(`${gasUrl}?t=${timestamp}`);
-        
-        if (!response.ok) throw new Error("網路回應不正常");
-        
-        const data = await response.json();
-        
-        if (data && data.length > 0) {
-            messages = data;
-            statusInfo.innerText = "✅ 同步成功：共 " + data.length + " 則祝福 (最後更新: " + new Date().toLocaleTimeString() + ")";
-            
-            // 如果是第一次抓到資料，立刻顯示第一則，不要讓螢幕等
-            if (container.innerText.includes("請點擊") || container.innerText.includes("歡迎")) {
-                rotateMessage();
+        async function loadData() {
+            debugBar.innerText = "正在連線 GAS: " + gasUrl;
+            try {
+                const res = await fetch(gasUrl + "?t=" + Date.now());
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    messages = data;
+                    debugBar.innerText = "✅ 同步成功！抓到 " + data.length + " 則祝福";
+                    showNext();
+                } else {
+                    debugBar.innerText = "⚠️ 連線成功但沒有資料 (D 欄是否有 ok?)";
+                }
+            } catch (e) {
+                debugBar.innerText = "❌ 連線失敗: " + e.message;
+                // 如果失敗，8秒後重試
+                setTimeout(loadData, 8000);
             }
-        } else {
-            statusInfo.innerText = "📭 資料庫目前沒有 'ok' 的訊息";
         }
-    } catch (err) {
-        statusInfo.innerText = "❌ 連線失敗：" + err.message;
-        console.error("Fetch Error:", err);
-    }
-}
 
-// 2. 輪播邏輯
-function rotateMessage() {
-    if (messages.length === 0) return;
+        function showNext() {
+            if (messages.length === 0) return;
+            const card = document.getElementById('card-target');
+            const item = messages[currentIndex];
+            
+            card.style.opacity = 0;
+            setTimeout(() => {
+                card.innerHTML = `
+                    <div class="message-card">
+                        <div class="sender">— ${item.name} —</div>
+                        <div class="content">${item.msg.replace(/\n/g, '<br>')}</div>
+                    </div>
+                `;
+                card.style.opacity = 1;
+                currentIndex = (currentIndex + 1) % messages.length;
+            }, 800);
+        }
 
-    const data = messages[currentIndex];
-    container.style.opacity = 0;
-    
-    setTimeout(() => {
-        // 渲染新卡片，並將 \n 換成換行符號
-        container.innerHTML = `
-            <div class="message-card">
-                <div class="sender">— ${data.name} —</div>
-                <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
-                <div class="wedding-tag">M & S Forever Love</div>
-            </div>
-        `;
-        container.style.opacity = 1;
-        
-        // 切換索引
-        currentIndex = (currentIndex + 1) % messages.length;
-    }, 1000);
-}
+        // 啟動
+        loadData();
+        setInterval(showNext, 8000);
+        setInterval(loadData, 30000); // 30秒抓一次新資料
 
-// 3. 鍵盤監聽與焦點 (針對 Safari/Chrome 優化)
-document.addEventListener('click', () => {
-    window.focus();
-    statusInfo.innerText = "🎯 視窗已就緒，可使用空白鍵";
-});
-
-document.addEventListener('keydown', (e) => {
-    // 支援 Space 與 Enter，增加操作容錯率
-    if (e.code === 'Space' || e.keyCode === 32 || e.code === 'Enter') {
-        e.preventDefault();
-        triggerKagamiBiraki();
-    }
-});
-
-function triggerKagamiBiraki() {
-    if (typeof confetti !== 'undefined') {
-        confetti({
-            particleCount: 180,
-            spread: 80,
-            origin: { y: 0.65 },
-            colors: ['#fdf5e6', '#8da086', '#c5a059', '#ffffff'],
-            zIndex: 999
-        });
-        statusInfo.innerText = "✨ 鏡開儀式觸發成功！";
-    }
-}
-
-// --- 啟動與循環 ---
-fetchMessages(); // 立即抓取第一次
-setInterval(fetchMessages, 15000); // 每 15 秒檢查一次試算表是否有新 ok 資料
-setInterval(rotateMessage, 8000);   // 每 8 秒切換一次顯示畫面的祝福語
+        // 簡單的點擊測試
+        window.onclick = () => { debugBar.innerText += " | 畫面已點擊"; };
+    </script>
 </body>
 </html>
