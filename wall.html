@@ -2,29 +2,56 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie's Wedding Wall - Master Stable</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maggie's Wedding Wall - Safari Fix</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #fdfaf5; font-family: "STSong", "NSimSun", serif; }
         
-        /* 1. 背景強制顯示 */
-        #bg-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        .bg-img { position: absolute; z-index: 2; opacity: 1; pointer-events: none; }
+        /* 背景層 */
+        #bg-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .bg-img { position: absolute; z-index: 2; opacity: 1; }
         .plant-tl { top: -5%; left: -5%; width: 45vw; max-width: 800px; }
         .plant-br { bottom: -5%; right: -5%; width: 40vw; max-width: 700px; }
 
-        /* 2. 內容容器透明化 */
-        #app-wrapper { position: relative; width: 100vw; height: 100vh; z-index: 10; background: transparent; perspective: 1000px; }
-        
-        /* 3. 磨砂玻璃卡片 */
-        .blessing-card { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 650px; padding: 60px 45px; box-sizing: border-box;
-            background: rgba(255, 255, 255, 0.75);
-            -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 35px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1); text-align: center; opacity: 0; 
+        /* 內容容器：使用 Grid 實現 Safari 絕對置中 */
+        #app-wrapper {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            display: grid;
+            place-items: center; /* 這裡能確保卡片不論在什麼瀏覽器都在正中央 */
+            z-index: 10;
+            perspective: 1000px;
+            background: transparent;
         }
+
+        #card-container {
+            display: grid;
+            place-items: center;
+            width: 100%; height: 100%;
+        }
+
+        /* 磨砂玻璃卡片 */
+        .blessing-card {
+            grid-area: 1 / 1; /* 讓所有卡片重疊在中心點 */
+            width: 650px;
+            padding: 60px 45px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.7);
+            
+            /* Safari 磨砂玻璃相容性 */
+            -webkit-backdrop-filter: blur(20px) saturate(130%);
+            backdrop-filter: blur(20px) saturate(130%);
+            
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 35px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+
         .card-name { font-size: 1.6rem; color: #7a8a66; margin-bottom: 25px; font-weight: bold; }
         .card-content { font-size: 1.15rem; color: #333; line-height: 2; white-space: pre-line; }
         #status-bar { position: fixed; bottom: 15px; left: 15px; font-size: 12px; color: rgba(0,0,0,0.3); z-index: 100; }
@@ -32,7 +59,7 @@
 </head>
 <body>
 
-    <div id="bg-container">
+    <div id="bg-layer">
         <img src="plant-top-left.png" class="bg-img plant-tl" alt="">
         <img src="plant-bottom-right.png" class="bg-img plant-br" alt="">
     </div>
@@ -41,10 +68,10 @@
         <div id="card-container"></div>
     </div>
 
-    <div id="status-bar">系統初始化中...</div>
+    <div id="status-bar">正在抓取祝福語...</div>
 
     <script>
-        // --- 核心改動：直接抓取，不再做複雜過濾 ---
+        // --- 移植 test.html 成功的資料邏輯 ---
         let messages = [{ name: "Maggie & Stanley", content: "歡迎來到我們的婚禮！", status: "ok" }];
         let currentIndex = 0;
         const GAS_URL = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
@@ -54,47 +81,50 @@
                 const response = await fetch(`${GAS_URL}?t=${Date.now()}`);
                 const data = await response.json();
                 
-                // 採用最寬鬆的過濾：只要有內容就顯示
+                // 這裡採用最寬鬆的過濾，不論欄位是大寫小寫，只要內容包含 ok 就算
                 const filtered = data.filter(item => {
-                    // 自動尋找 'ok'，不論欄位名稱
-                    return Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok');
+                    const statusVal = item.status || item.Status || item.狀態 || "";
+                    return statusVal.toString().toLowerCase().trim() === 'ok';
                 });
 
                 if (filtered.length > 0) {
                     messages = filtered;
-                    document.getElementById('status-bar').innerText = `同步成功: 共 ${messages.length} 則祝福`;
+                    document.getElementById('status-bar').innerText = `同步成功: 已載入 ${messages.length} 則`;
                 }
-            } catch (e) {
-                document.getElementById('status-bar').innerText = "同步中...";
+            } catch (error) {
+                document.getElementById('status-bar').innerText = "連線中...";
             }
         }
 
         function playNext() {
             const container = document.getElementById('card-container');
-            if (currentIndex >= messages.length) currentIndex = 0;
+            if (messages.length === 0) return;
+            
             const msg = messages[currentIndex];
-
-            container.innerHTML = ''; 
             const card = document.createElement('div');
             card.className = 'blessing-card';
             card.innerHTML = `<div class="card-name">${msg.name}</div><div class="card-content">${msg.content}</div>`;
+            
+            container.innerHTML = ''; // 確保畫面乾淨
             container.appendChild(card);
 
-            gsap.timeline({
+            const tl = gsap.timeline({
                 onComplete: () => {
                     currentIndex = (currentIndex + 1) % messages.length;
                     playNext();
                 }
-            })
-            .fromTo(card, 
-                { opacity: 0, scale: 0.8, z: -200, xPercent: -50, yPercent: -50, top: "50%", left: "50%" }, 
+            });
+
+            // GSAP 動畫：移除 xPercent/yPercent 避免 Safari 位移衝突
+            tl.fromTo(card, 
+                { opacity: 0, scale: 0.8, z: -200 }, 
                 { opacity: 1, scale: 1, z: 0, duration: 1.5, ease: "power2.out" }
             )
             .to(card, { opacity: 1, duration: 6 }) 
             .to(card, { opacity: 0, scale: 0.7, z: -400, duration: 1.2, ease: "power2.in" });
         }
 
-        // 啟動：先跑動畫，後抓資料
+        // 啟動流程
         playNext();
         updateData();
         setInterval(updateData, 60000);
