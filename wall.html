@@ -3,72 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maggie's Wedding Wall - Absolute Fixed</title>
+    <title>Maggie & Stanley Wedding Wall</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
-        /* --- 1. 完全清除干擾 --- */
+        /* --- 1. 基礎重置 --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #fdfaf5; font-family: "STFangsong", "NSimSun", serif; }
 
-        body, html {
-            width: 100%; height: 100%;
-            overflow: hidden;
-            background-color: #fdfaf5;
-            font-family: "STFangsong", "NSimSun", serif;
-        }
-
-        /* --- 2. 靜態背景：不再使用複雜 CSS 圖層 --- */
+        /* --- 2. 單一背景圖：置底 --- */
         #master-bg {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover;
             z-index: 1;
         }
 
-        /* --- 3. 物理定位容器：使用 Flexbox 鎖定中心 --- */
-        /* 這是解決 Safari 亂飄的最強方法 */
+        /* --- 3. 物理定位容器：Flexbox 鎖定中心 (解決 Safari 偏移) --- */
         #display-wrapper {
-            position: fixed; top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            display: flex;
-            align-items: center; /* 垂直置中 */
-            justify-content: center; /* 水平置中 */
-            z-index: 10;
-            perspective: 1200px;
-            background: transparent;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10; perspective: 1200px;
         }
 
-        #card-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* --- 4. 簡約卡片設計 --- */
+        /* --- 4. 磨砂玻璃信紙卡片 --- */
         .message-card {
             width: 800px; max-width: 90%;
-            padding: 70px 50px;
-            background: rgba(255, 255, 255, 0.85); /* 磨砂質感 */
-            -webkit-backdrop-filter: blur(15px);
-            backdrop-filter: blur(15px);
+            padding: 70px 60px;
+            background: rgba(255, 255, 255, 0.8);
+            -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 12px;
+            border-radius: 10px;
             box-shadow: 0 40px 80px rgba(0,0,0,0.1);
             text-align: center;
-            opacity: 0; /* 初始由 GSAP 控制 */
-            position: relative;
+            opacity: 0; /* 由 GSAP 控制 */
         }
 
-        .sender { 
-            font-size: 24px; color: #7d8c78; margin-bottom: 30px; 
-            letter-spacing: 0.2em; font-weight: bold; 
-        }
-        .content { 
-            font-size: 36px; line-height: 1.8; color: #333; 
-            margin-bottom: 40px; word-break: keep-all; 
-        }
-        .wedding-tag { font-size: 18px; color: #c5a059; font-style: italic; }
+        .sender { font-size: 24px; color: #7d8c78; margin-bottom: 35px; letter-spacing: 0.3em; font-weight: bold; }
+        .content { font-size: 38px; line-height: 1.8; color: #333; margin-bottom: 45px; word-break: keep-all; font-weight: 500; }
+        .wedding-tag { font-size: 18px; color: #c5a059; font-style: italic; letter-spacing: 2px; }
 
         #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 11px; color: rgba(0,0,0,0.2); z-index: 100; }
     </style>
@@ -81,26 +53,28 @@
         <div id="card-container">
             <div class="message-card" id="init-card">
                 <div class="sender">Maggie & Stanley</div>
-                <div class="content">Wedding Blessing Wall<br>資料同步中，請稍候...</div>
-                <div class="wedding-tag">Forever Love 2026.04</div>
+                <div class="content">Wedding Blessing Wall<br>期待您的祝福語...</div>
+                <div class="wedding-tag">Forever Love April 2026</div>
             </div>
         </div>
     </div>
 
-    <div id="status-bar">CONNECTING...</div>
+    <div id="status-bar">SYSTEM INITIALIZING...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
-        let messages = [];
+        
+        // 初始預設訊息
+        let messages = [{ name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n請掃描 QR Code 留下祝福。", status: "ok" }];
         let currentIndex = 0;
 
-        // 1. 抓取資料：完全採用 test.html 成功邏輯
+        // 1. 抓取資料 (背景異步執行)
         async function updateData() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
                 
-                // 寬鬆過濾
+                // 寬鬆過濾：只要有寫 ok 就通過
                 const filtered = data.filter(item => {
                     const s = item.status || item.Status || "";
                     return s.toString().toLowerCase().trim() === 'ok';
@@ -108,25 +82,23 @@
 
                 if (filtered.length > 0) {
                     messages = filtered;
-                    document.getElementById('status-bar').innerText = `SYNC OK: ${messages.length} MSGS`;
+                    document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length} MESSAGES`;
                 }
             } catch (e) {
                 document.getElementById('status-bar').innerText = "SYNCING...";
             }
         }
 
-        // 2. 核心輪播動畫
+        // 2. 核心輪播動畫 (不等待資料，直接啟動)
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            if (messages.length === 0) return;
-            
             const currentMsg = messages[currentIndex];
 
             // 移除舊卡片
             const oldCard = container.querySelector('.message-card');
             if (oldCard) {
                 gsap.to(oldCard, {
-                    opacity: 0, scale: 0.6, z: -500, duration: 1.2, 
+                    opacity: 0, scale: 0.5, z: -500, duration: 1.5, ease: "power2.in",
                     onComplete: () => oldCard.remove()
                 });
             }
@@ -135,28 +107,32 @@
             const newCard = document.createElement('div');
             newCard.className = 'message-card';
             newCard.innerHTML = `
-                <div class="sender">— ${currentMsg.name || "賓客"} —</div>
-                <div class="content">${(currentMsg.msg || currentMsg.content || "").replace(/\n/g, '<br>')}</div>
+                <div class="sender">— ${currentMsg.name || currentMsg.姓名 || "賓客"} —</div>
+                <div class="content">${(currentMsg.msg || currentMsg.內容 || "").replace(/\n/g, '<br>')}</div>
                 <div class="wedding-tag">Mandarin Oriental Taipei</div>
             `;
             container.appendChild(newCard);
 
-            // GSAP 動畫：只動 Scale 與 Z，絕不動 X 與 Y (防止亂飄)
+            // GSAP 3D 進場動畫 (物理置中，不動 X/Y)
             gsap.fromTo(newCard, 
-                { opacity: 0, scale: 0.8, z: -200 }, 
-                { opacity: 1, scale: 1, z: 0, duration: 1.5, ease: "power3.out" }
+                { opacity: 0, scale: 0.8, z: -300 }, 
+                { opacity: 1, scale: 1, z: 0, duration: 2, ease: "power3.out" }
             );
 
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // 3. 執行
+        // 3. 啟動機制
         window.onload = () => {
-            updateData().then(() => {
-                rotateMessage();
-                setInterval(rotateMessage, 10000); // 10秒換一張
-            });
-            setInterval(updateData, 60000); // 每分鐘同步
+            // A. 立刻開始播放第一則 (預設訊息)
+            rotateMessage();
+            
+            // B. 設定輪播定時器 (10秒換一張)
+            setInterval(rotateMessage, 10000);
+            
+            // C. 背景同步資料 (不阻塞動畫)
+            updateData();
+            setInterval(updateData, 45000); 
         };
     </script>
 </body>
