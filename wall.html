@@ -102,94 +102,95 @@
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <script>
-        // --- 設定區 ---
-        const gasUrl = "你的_GAS_部署網址"; 
+    // --- 設定區 ---
+const gasUrl = "你的_GAS_部署網址"; 
+
+let messages = []; // 初始設為空，等待抓取
+let currentIndex = 0;
+const statusInfo = document.getElementById('status-info');
+const container = document.getElementById('card-target');
+
+// 1. 強化抓取邏輯 (加入防快取參數)
+async function fetchMessages() {
+    try {
+        // 在網址後面加上時間戳記，強迫瀏覽器每次都抓最新的資料
+        const timestamp = new Date().getTime();
+        const response = await fetch(`${gasUrl}?t=${timestamp}`);
         
-        let messages = [{ name: "Maggie & Stanley", msg: "歡迎參加我們的婚禮" }];
-        let currentIndex = 0;
-        const statusInfo = document.getElementById('status-info');
-
-        // 1. 抓取資料 (加入更強的錯誤捕捉)
-        async function fetchMessages() {
-            if (!gasUrl || gasUrl.includes("你的_GAS")) {
-                statusInfo.innerText = "⚠️ 尚未填寫 GAS 網址";
-                return;
-            }
-
-            try {
-                const response = await fetch(gasUrl, { method: 'GET', mode: 'cors' });
-                if (!response.ok) throw new Error("HTTP 錯誤 " + response.status);
-                
-                const data = await response.json();
-                if (data && data.length > 0) {
-                    messages = data;
-                    statusInfo.innerText = "✅ 同步成功：共 " + data.length + " 則祝福";
-                } else {
-                    statusInfo.innerText = "📭 資料庫為空 (請檢查試算表 D 欄是否填寫 ok)";
-                }
-            } catch (err) {
-                statusInfo.innerText = "❌ 連線失敗：" + err.message + " (預覽模式常見限制)";
-                console.error("Fetch Error:", err);
-            }
-        }
-
-        // 2. 輪播邏輯 (修正：即使只有一則也嘗試換場動畫)
-        function rotateMessage() {
-            const container = document.getElementById('card-target');
-            if (messages.length === 0) return;
-
-            const data = messages[currentIndex];
-            container.style.opacity = 0;
+        if (!response.ok) throw new Error("網路回應不正常");
+        
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            messages = data;
+            statusInfo.innerText = "✅ 同步成功：共 " + data.length + " 則祝福 (最後更新: " + new Date().toLocaleTimeString() + ")";
             
-            setTimeout(() => {
-                container.innerHTML = `
-                    <div class="message-card">
-                        <div class="sender">— ${data.name} —</div>
-                        <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
-                        <div class="wedding-tag">M & S Forever Love</div>
-                    </div>
-                `;
-                container.style.opacity = 1;
-                currentIndex = (currentIndex + 1) % messages.length;
-            }, 1000);
-        }
-
-        // 3. 解決空白鍵監聽 (強化版)
-        function triggerKagamiBiraki() {
-            if (typeof confetti !== 'undefined') {
-                confetti({
-                    particleCount: 180,
-                    spread: 80,
-                    origin: { y: 0.65 },
-                    colors: ['#fdf5e6', '#8da086', '#c5a059', '#ffffff'],
-                    zIndex: 999
-                });
-                statusInfo.innerText = "✨ 鏡開儀式觸發成功！";
-            } else {
-                alert("特效套件尚未載入，請檢查網路連線");
+            // 如果是第一次抓到資料，立刻顯示第一則，不要讓螢幕等
+            if (container.innerText.includes("請點擊") || container.innerText.includes("歡迎")) {
+                rotateMessage();
             }
+        } else {
+            statusInfo.innerText = "📭 資料庫目前沒有 'ok' 的訊息";
         }
+    } catch (err) {
+        statusInfo.innerText = "❌ 連線失敗：" + err.message;
+        console.error("Fetch Error:", err);
+    }
+}
 
-        // 強制視窗取得焦點的點擊事件
-        document.addEventListener('click', () => {
-            document.body.focus();
-            statusInfo.innerText = "🎯 視窗已就緒，可使用空白鍵";
+// 2. 輪播邏輯
+function rotateMessage() {
+    if (messages.length === 0) return;
+
+    const data = messages[currentIndex];
+    container.style.opacity = 0;
+    
+    setTimeout(() => {
+        // 渲染新卡片，並將 \n 換成換行符號
+        container.innerHTML = `
+            <div class="message-card">
+                <div class="sender">— ${data.name} —</div>
+                <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
+                <div class="wedding-tag">M & S Forever Love</div>
+            </div>
+        `;
+        container.style.opacity = 1;
+        
+        // 切換索引
+        currentIndex = (currentIndex + 1) % messages.length;
+    }, 1000);
+}
+
+// 3. 鍵盤監聽與焦點 (針對 Safari/Chrome 優化)
+document.addEventListener('click', () => {
+    window.focus();
+    statusInfo.innerText = "🎯 視窗已就緒，可使用空白鍵";
+});
+
+document.addEventListener('keydown', (e) => {
+    // 支援 Space 與 Enter，增加操作容錯率
+    if (e.code === 'Space' || e.keyCode === 32 || e.code === 'Enter') {
+        e.preventDefault();
+        triggerKagamiBiraki();
+    }
+});
+
+function triggerKagamiBiraki() {
+    if (typeof confetti !== 'undefined') {
+        confetti({
+            particleCount: 180,
+            spread: 80,
+            origin: { y: 0.65 },
+            colors: ['#fdf5e6', '#8da086', '#c5a059', '#ffffff'],
+            zIndex: 999
         });
+        statusInfo.innerText = "✨ 鏡開儀式觸發成功！";
+    }
+}
 
-        // 處理鍵盤事件
-        window.addEventListener('keydown', (e) => {
-            // Safari 有時抓 keyCode，Chrome 抓 code
-            if (e.code === 'Space' || e.keyCode === 32) {
-                e.preventDefault();
-                triggerKagamiBiraki();
-            }
-        }, true); // 使用 Capture 模式確保抓到事件
-
-        // 初始化執行
-        fetchMessages();
-        setInterval(fetchMessages, 30000); // 30秒更新一次資料
-        setInterval(rotateMessage, 8000);   // 8秒換一則
-    </script>
+// --- 啟動與循環 ---
+fetchMessages(); // 立即抓取第一次
+setInterval(fetchMessages, 15000); // 每 15 秒檢查一次試算表是否有新 ok 資料
+setInterval(rotateMessage, 8000);   // 每 8 秒切換一次顯示畫面的祝福語
 </body>
 </html>
