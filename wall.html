@@ -28,7 +28,7 @@
             z-index: 1;
         }
 
-        /* 2. 主容器：使用 Grid 鎖定正中央 (Safari 最穩定的置中法) */
+        /* 2. 主容器：使用 CSS Grid 解決 Safari 偏移與卡片亂飄 */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: grid;
@@ -37,9 +37,9 @@
             perspective: 1500px;
         }
 
-        /* 3. 經典信紙卡片風格 */
+        /* 3. 經典信紙卡片 (融合 test.html 風格) */
         .message-card {
-            grid-area: 1 / 1; /* 強制所有卡片重疊在同一個中心點 */
+            grid-area: 1 / 1;
             border-radius: 4px;
             background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
@@ -60,7 +60,7 @@
         }
 
         .sender { font-size: 24px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
-        .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
+        .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; font-weight: 500; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
         #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 11px; color: rgba(0,0,0,0.3); z-index: 100; }
@@ -74,18 +74,20 @@
         <div id="card-container" style="display: grid; place-items: center;"></div>
     </div>
 
-    <div id="status-bar">CONNECTING...</div>
+    <div id="status-bar">CONNECTING TO CLOUD...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
+        // 1. 初始化資料 (預設內容，保證一開啟就有東西看)
         let messages = [
-            { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n正在同步雲端祝福語...", status: "ok" }
+            { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n請掃描 QR Code 留下祝福。", status: "ok" }
         ];
         let currentIndex = 0;
 
-        // --- 1. 櫻花瓣特效 ---
+        // 2. 落櫻花瓣效果
         function triggerPetals() {
+            if (typeof confetti !== 'function') return; // 防止庫未載入報錯
             const colors = ['#ffc0cb', '#ffb6c1', '#fff0f5', '#fdf5e6'];
             confetti({
                 particleCount: 150, spread: 70, origin: { y: 0.6 },
@@ -93,74 +95,81 @@
             });
         }
 
-        // --- 2. 核心輪播 (保證不重複、不亂飄) ---
+        // 3. 核心輪播 (保證不重複、不亂飄)
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            
-            // 每次切換前徹底清空容器
+            if (!container) return;
+
+            // 徹底清空容器，防止卡片堆疊
             container.innerHTML = '';
 
             const currentMsg = messages[currentIndex];
             const newCard = document.createElement('div');
             newCard.className = 'message-card';
+            
+            // 自動適配欄位名稱 (適配 test.html 裡的內容)
+            const sender = currentMsg.name || "賓客";
+            const bodyText = (currentMsg.msg || currentMsg.content || "新婚快樂！").replace(/\n/g, '<br>');
+
             newCard.innerHTML = `
-                <div class="sender">— ${currentMsg.name || "賓客"} —</div>
-                <div class="content">${(currentMsg.msg || "新婚快樂").replace(/\n/g, '<br>')}</div>
-                <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
+                <div class="sender">— ${sender} —</div>
+                <div class="content">${bodyText}</div>
+                <div class="wedding-tag">April 2026 @ Mandarin Oriental</div>
             `;
             container.appendChild(newCard);
 
-            // GSAP 動畫 (只控制縮放與景深，確保 Safari 不偏移)
-            const tl = gsap.timeline();
-            tl.fromTo(newCard, 
-                { opacity: 0, scale: 0.85, z: -200 }, 
-                { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power2.out" }
-            )
-            .to(newCard, {
-                opacity: 0, scale: 0.5, z: -600, delay: 7.5, duration: 1.5, ease: "power2.in"
-            });
+            // GSAP 動畫 (物理縮放，解決 Safari 位移)
+            if (window.gsap) {
+                const tl = gsap.timeline();
+                tl.fromTo(newCard, 
+                    { opacity: 0, scale: 0.85, z: -200 }, 
+                    { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power2.out" }
+                )
+                .to(newCard, {
+                    opacity: 0, scale: 0.5, z: -600, delay: 7.5, duration: 1.5, ease: "power2.in"
+                });
+            } else {
+                // 如果 GSAP 沒載入，至少要有基礎顯示
+                newCard.style.opacity = 1;
+            }
 
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // --- 3. 資料抓取 (非阻塞模式) ---
+        // 4. 強效資料同步 (完全移植 test.html 邏輯)
         async function updateData() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
                 
-                // 寬鬆識別邏輯
+                // 寬鬆過濾：只要有寫 ok 就通過
                 const filtered = data.filter(item => {
                     return Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok');
-                }).map(item => {
-                    const keys = Object.keys(item);
-                    return {
-                        name: item[keys.find(k => /name|姓名|稱呼/i.test(k))] || "賓客",
-                        msg: item[keys.find(k => /msg|content|內容|message/i.test(k))] || "新婚快樂！"
-                    };
                 });
 
                 if (filtered.length > 0) {
                     messages = filtered;
-                    document.getElementById('status-bar').innerText = `已載入 ${messages.length} 則祝福`;
+                    document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length} MESSAGES`;
                 }
             } catch (e) {
-                console.log("Syncing...");
+                document.getElementById('status-bar').innerText = "SYNCING...";
             }
         }
 
-        // --- 4. 啟動 ---
+        // 5. 啟動機制：保證一秒啟動
         window.onload = () => {
-            // A. 立刻播放 (不等待 Fetch，防止卡死)
+            // A. 立刻播放第一則 (不等待雲端，防止卡死)
             rotateMessage();
-            setInterval(rotateMessage, 10000); 
+            
+            // B. 設定輪播循環 (10秒一張)
+            setInterval(rotateMessage, 10000);
 
-            // B. 背景同步
+            // C. 背景同步雲端資料
             updateData();
             setInterval(updateData, 45000); 
         };
 
-        // 監聽空白鍵
+        // 鍵盤監聽 (空白鍵噴花)
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
