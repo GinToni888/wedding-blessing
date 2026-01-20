@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Maggie & Stanley Wedding Wall</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,400;0,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream-bg: #fdfaf5;
+            --sage-green: #7d8c78;
+            --gold-accent: #c5a059;
+            --text-color: #4a4a4a;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: var(--cream-bg);
+            /* 仿宋體字型設定 */
+            font-family: "STFangsong", "FangSong", "仿宋", "Adobe Fangsong", serif;
+            color: var(--text-color);
+        }
+
+        /* 奶油色漸層背景 */
+        .background {
+            position: fixed; width: 100%; height: 100%;
+            background: radial-gradient(circle, #ffffff 0%, #fdf5e6 100%);
+            z-index: -2;
+        }
+
+        /* 裝飾綠植 (示意) */
+        .plant-deco {
+            position: absolute; opacity: 0.6; z-index: -1;
+            transition: transform 2s ease-in-out;
+        }
+        .plant-top-left { top: -50px; left: -50px; width: 300px; transform: rotate(-15deg); }
+        .plant-bottom-right { bottom: -50px; right: -50px; width: 350px; transform: rotate(10deg); }
+
+        /* 訊息容器 */
+        #display-container {
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; width: 100vw;
+        }
+
+        /* 磨砂玻璃訊息卡片 */
+        .message-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 30px;
+            padding: 60px 80px;
+            max-width: 60%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            text-align: center;
+            animation: fadeInUp 1.5s ease-out;
+            position: relative;
+        }
+
+        .sender {
+            font-size: 24px; color: var(--sage-green);
+            margin-bottom: 30px; letter-spacing: 2px;
+        }
+
+        .content {
+            font-size: 42px; line-height: 1.6;
+            margin-bottom: 40px; font-weight: 500;
+        }
+
+        .wedding-tag {
+            font-family: 'Playfair Display', serif;
+            font-style: italic; font-size: 20px; color: var(--gold-accent);
+        }
+
+        /* 動畫效果 */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 鏡開儀式：驚喜特效容器 */
+        #fx-canvas {
+            position: fixed; top: 0; left: 0; pointer-events: none; z-index: 100;
+        }
+
+        /* 提示字 (測試用) */
+        #hint {
+            position: fixed; bottom: 10px; left: 10px; font-size: 12px; color: #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background"></div>
+    
+    <svg class="plant-deco plant-top-left" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#7d8c78" opacity="0.1"/></svg>
+    <svg class="plant-deco plant-bottom-right" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#7d8c78" opacity="0.1"/></svg>
+
+    <div id="display-container">
+        <div id="card-target">
+            <div class="message-card">
+                <div class="sender">LOADING祝福載入中...</div>
+                <div class="content">Maggie & Stanley<br>Wedding Celebration</div>
+                <div class="wedding-tag">April 2026 @ Mandarin Oriental</div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="fx-canvas"></canvas>
+    <div id="hint">測試說明：點擊「空白鍵」模擬落槌瞬間效果</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        // 模擬資料庫訊息 (零件 A 完成後會改為自動抓取)
+        const mockMessages = [
+            { name: "親愛的伴娘 小雅", msg: "看著 Maggie 穿上緞面魚尾婚紗，真的美得像森林裡的仙子！" },
+            { name: "Stanley 的大學死黨", msg: "阿貝，要把我們心目中的女神 Maggie 照顧好喔！" },
+            { name: "文華東方主廚", msg: "祝福二位新婚愉快，甜甜蜜蜜！" },
+            { name: "Maggie's Colleague", msg: "Wishing you a lifetime of happiness and love." }
+        ];
+
+        let currentIndex = 0;
+
+        function updateMessage() {
+            const card = document.getElementById('card-target');
+            const data = mockMessages[currentIndex];
+            
+            card.innerHTML = `
+                <div class="message-card">
+                    <div class="sender">— ${data.name} —</div>
+                    <div class="content">${data.msg}</div>
+                    <div class="wedding-tag">M & S Forever Love</div>
+                </div>
+            `;
+            
+            currentIndex = (currentIndex + 1) % mockMessages.length;
+        }
+
+        // 每 8 秒切換一次訊息
+        setInterval(updateMessage, 8000);
+
+        // --- 核心互動：鏡開儀式落槌效果 ---
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                triggerKagamiBiraki();
+            }
+        });
+
+        function triggerKagamiBiraki() {
+            // 1. 噴發金粉與奶油色花瓣效果
+            var count = 200;
+            var defaults = { origin: { y: 0.7 } };
+
+            function fire(particleRatio, opts) {
+                confetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(count * particleRatio)
+                }));
+            }
+
+            fire(0.25, { spread: 26, startVelocity: 55, colors: ['#fdf5e6', '#c5a059'] });
+            fire(0.2, { spread: 60, colors: ['#7d8c78', '#ffffff'] });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 45 });
+
+            // 這裡可以後續加入「蝴蝶飛出」的 JS 動畫邏輯
+            console.log("落槌瞬間：蝴蝶與鮮花綻放！");
+        }
+    </script>
+</body>
+</html>
