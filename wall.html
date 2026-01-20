@@ -10,25 +10,25 @@
             --sage-green: #7d8c78; /* 經典鼠尾草綠 */
             --light-sage: #a4b49d;
             --gold: #c5a059;
-            --text-color: #444;
+            --text-color: #4a4a4a;
         }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: var(--cream-bg);
-            /* 仿宋字體堆疊 */
+            /* 仿宋字體堆疊：確保在各個系統都能呈現纖細優雅感 */
             font-family: "STFangsong", "FangSong", "仿宋", "Adobe Fangsong", serif;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 背景：奶油色漸層 */
+        /* 1. 背景層：奶油色放射漸層 */
         .background-layer {
             position: fixed; width: 100%; height: 100%;
             background: radial-gradient(circle at center, #ffffff 0%, #fdf5e6 100%);
             z-index: -5;
         }
 
-        /* --- 綠植：韓式森林感設計 --- */
+        /* 2. 綠植層：韓式森林感設計 (搖曳動態) */
         .forest-container {
             position: fixed; width: 100%; height: 100%;
             pointer-events: none; z-index: -1;
@@ -39,44 +39,46 @@
             fill: var(--sage-green);
             opacity: 0.5;
             filter: blur(1px);
-            animation: sway 8s ease-in-out infinite;
+            animation: forestSway 10s ease-in-out infinite;
             transform-origin: center bottom;
         }
 
-        .top-left { top: -60px; left: -60px; width: 500px; }
-        .bottom-right { bottom: -80px; right: -60px; width: 550px; animation-name: sway-alt; }
+        /* 左上角綠植配置 */
+        .top-left { top: -60px; left: -80px; width: 550px; }
+        /* 右下角綠植配置 */
+        .bottom-right { bottom: -100px; right: -80px; width: 650px; animation-name: forestSwayAlt; }
 
-        @keyframes sway {
+        @keyframes forestSway {
             0%, 100% { transform: rotate(-3deg) scale(1); }
-            50% { transform: rotate(3deg) scale(1.02); }
+            50% { transform: rotate(3deg) scale(1.05); }
         }
-        @keyframes sway-alt {
+        @keyframes forestSwayAlt {
             0%, 100% { transform: rotate(2deg) scale(1.02); }
-            50% { transform: rotate(-2deg) scale(1); }
+            50% { transform: rotate(-2deg) scale(0.98); }
         }
 
-        /* --- 字卡：寬度與排版優化 --- */
+        /* 3. 訊息卡片容器：磨砂玻璃質感 */
         #display-container {
             display: flex; justify-content: center; align-items: center;
             height: 100vh; width: 100vw;
         }
 
         .message-card {
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 40px;
-            padding: 60px 80px;
-            /* 調整寬度：確保「歡迎參加我們的婚禮」橫排且有餘裕 */
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50px;
+            padding: 60px 100px;
+            /* 字卡加寬，確保文字橫排空間充裕 */
             width: 750px; 
-            max-width: 90%;
+            max-width: 85%;
             text-align: center;
-            box-shadow: 0 25px 50px rgba(125, 140, 120, 0.08);
+            box-shadow: 0 30px 60px rgba(125, 140, 120, 0.1);
             transition: opacity 1.2s ease-in-out;
         }
 
         .sender {
-            font-size: 20px; /* 縮小後的尺寸 */
+            font-size: 20px; /* 字體縮小兩號 */
             color: var(--sage-green);
             margin-bottom: 30px;
             letter-spacing: 0.2em;
@@ -84,11 +86,11 @@
         }
 
         .content {
-            font-size: 30px; /* 縮小後的尺寸 (原48->32->30) */
+            font-size: 30px; /* 字體縮小兩號，配合仿宋體的精緻感 */
             line-height: 1.8;
             color: var(--text-color);
             margin-bottom: 40px;
-            word-break: keep-all;
+            word-break: keep-all; /* 防止中文不正常斷行 */
         }
 
         .wedding-tag {
@@ -96,19 +98,19 @@
             font-style: italic; font-size: 20px; color: var(--gold);
         }
 
-        /* 狀態提示列 */
+        /* 狀態偵測列 (Debug 用，正式婚禮可隱藏) */
         #status-info {
             position: fixed; bottom: 20px; left: 20px; font-size: 13px; color: #aaa;
-            background: rgba(255,255,255,0.8); padding: 5px 15px; border-radius: 20px;
+            background: rgba(255,255,255,0.7); padding: 5px 15px; border-radius: 20px;
         }
 
-        /* 鏡開儀式：落槌時的視覺閃爍 */
-        .flash-effect {
-            animation: flash 0.5s ease-out;
+        /* 鏡開儀式閃爍特效 */
+        .flash-active {
+            animation: screenFlash 0.5s ease-out;
         }
-        @keyframes flash {
+        @keyframes screenFlash {
             0% { background-color: rgba(255,255,255,0); }
-            50% { background-color: rgba(255,255,255,0.5); }
+            50% { background-color: rgba(255,255,255,0.6); }
             100% { background-color: rgba(255,255,255,0); }
         }
     </style>
@@ -124,4 +126,108 @@
         </svg>
         <svg class="leaf-group bottom-right" viewBox="0 0 200 200">
             <path d="M40,100 C40,40 100,40 100,40 C100,40 160,40 160,100 C160,160 100,160 100,160 C100,160 40,160 40,100" />
-            <path d="M60,140 C60,90
+            <path d="M60,140 C60,90 120,70 120,70 C120,70 180,90 180,140 C180,190 120,210 120,210 C120,210 60,190 60,140" opacity="0.6" />
+        </svg>
+    </div>
+
+    <div id="display-container">
+        <div id="card-target">
+            <div class="message-card">
+                <div class="sender">Maggie & Stanley</div>
+                <div class="content">正在連線資料庫...<br>請點擊畫面任一處啟動系統</div>
+                <div class="wedding-tag">Love at Mandarin Oriental</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="status-info">等待初始化...</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        // 妳提供的 GAS 網址 (零件 A)
+        const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
+
+        let messages = [];
+        let currentIndex = 0;
+        const statusInfo = document.getElementById('status-info');
+        const cardTarget = document.getElementById('card-target');
+
+        // 1. 同步資料邏輯
+        async function fetchMessages() {
+            try {
+                const response = await fetch(`${gasUrl}?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error("連線失敗");
+                
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    messages = data;
+                    statusInfo.innerText = `✅ 同步成功: ${data.length} 則祝福`;
+                    // 如果還是初始文字，立即更換第一則
+                    if (cardTarget.innerText.includes("正在連線")) rotateMessage();
+                } else {
+                    statusInfo.innerText = "📭 連線成功但資料庫為空 (D欄須填ok)";
+                }
+            } catch (err) {
+                statusInfo.innerText = "❌ 錯誤: " + err.message;
+            }
+        }
+
+        // 2. 字卡切換邏輯
+        function rotateMessage() {
+            if (messages.length === 0) return;
+            const data = messages[currentIndex];
+            cardTarget.style.opacity = 0;
+            
+            setTimeout(() => {
+                cardTarget.innerHTML = `
+                    <div class="message-card">
+                        <div class="sender">— ${data.name} —</div>
+                        <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
+                        <div class="wedding-tag">Forever Love 2026.04</div>
+                    </div>
+                `;
+                cardTarget.style.opacity = 1;
+                currentIndex = (currentIndex + 1) % messages.length;
+            }, 1000);
+        }
+
+        // 3. 互動功能 (鏡開儀式落槌)
+        function triggerKagamiBiraki() {
+            // 背景瞬間閃光
+            const flash = document.getElementById('bg-flash');
+            flash.classList.add('flash-active');
+            setTimeout(() => flash.classList.remove('flash-active'), 500);
+
+            // 噴發韓式色調花瓣 (奶油、金、鼠尾草綠)
+            confetti({
+                particleCount: 200,
+                spread: 75,
+                origin: { y: 0.6 },
+                colors: ['#fdf5e6', '#7d8c78', '#c5a059', '#ffffff'],
+                ticks: 300,
+                scalar: 1.2
+            });
+            statusInfo.innerText = "✨ 鏡開儀式落槌！祝福綻放 ✨";
+        }
+
+        // 4. 事件監聽 (解決 Safari/Chrome 焦點問題)
+        document.addEventListener('click', () => {
+            window.focus();
+            statusInfo.innerText = "🎯 視窗已就緒，空白鍵已啟動";
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.keyCode === 32) {
+                e.preventDefault();
+                triggerKagamiBiraki();
+            }
+        });
+
+        // 啟動循環任務
+        fetchMessages();
+        setInterval(fetchMessages, 20000); // 20秒抓一次新資料
+        setInterval(rotateMessage, 8000);   // 8秒換一則祝福
+    </script>
+</body>
+</html>
