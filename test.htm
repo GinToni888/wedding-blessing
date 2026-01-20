@@ -1,0 +1,151 @@
+<div id="bg-fixed-layer"></div>
+<div id="app-wrapper">
+    <div id="card-container"></div>
+</div>
+<div id="status-bar">準備中...</div>
+
+<style>
+    :root {
+        --bg-color: #fdfaf5; /* 奶油底色 */
+        --sage-glow: rgba(224, 229, 209, 0.8); /* 鼠尾草綠，調高不透明度 */
+    }
+
+    /* 2. 背景層：強制置底且填滿單螢幕 */
+    #bg-fixed-layer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg-color);
+        z-index: -10; /* 極深層 */
+        overflow: hidden;
+    }
+
+    #bg-fixed-layer::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        /* 強化漸層感，確保單螢幕看得見 */
+        background: 
+            radial-gradient(circle at 10% 10%, var(--sage-glow) 0%, transparent 50%),
+            radial-gradient(circle at 90% 90%, var(--sage-glow) 0%, transparent 50%);
+        filter: blur(50px);
+        opacity: 0.8;
+    }
+
+    /* 3. 主容器：必須透明，否則會遮掉背景 */
+    #app-wrapper {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        background: transparent; 
+        z-index: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        perspective: 1200px;
+    }
+
+    /* 4. 卡片樣式：仿宋體縮小兩號 */
+    .blessing-card {
+        position: absolute;
+        width: 650px;
+        background: #ffffff;
+        padding: 50px;
+        border-radius: 25px; /* 圓弧框 */
+        box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+        text-align: center;
+        font-family: "STSong", "NSimSun", serif;
+        font-size: 0.9rem; /* 纖細感 */
+        line-height: 2;
+        letter-spacing: 0.08em;
+        opacity: 0;
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+    let messages = [];
+    let currentIndex = 0;
+    const GAS_URL = "你的GAS網址";
+
+    async function initSystem() {
+        await updateData();
+        if (messages.length > 0) {
+            startLoop();
+        }
+    }
+
+    async function updateData() {
+        try {
+            const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
+            const data = await res.json();
+            // 過濾 ok 的訊息
+            messages = data.filter(m => m.status === 'ok');
+            document.getElementById('status-bar').innerText = `已同步: ${messages.length} 則`;
+        } catch (e) {
+            console.error("更新失敗", e);
+        }
+    }
+
+    function startLoop() {
+        const container = document.getElementById('card-container');
+        
+        // 取得目前的資料
+        const currentMsg = messages[currentIndex];
+        
+        // 建立新卡片
+        const card = document.createElement('div');
+        card.className = 'blessing-card';
+        card.innerHTML = `
+            <div style="color:#7a8a66; font-size:1.2rem; margin-bottom:25px;">${currentMsg.name}</div>
+            <div style="color:#444;">${currentMsg.content}</div>
+        `;
+        container.appendChild(card);
+
+        // GSAP 動畫與強制循環邏輯
+        const tl = gsap.timeline({
+            onComplete: () => {
+                card.remove(); // 移除舊卡片
+                // 核心關鍵：在此重置索引並啟動下一輪
+                currentIndex = (currentIndex + 1) % messages.length;
+                startLoop(); // 遞迴呼叫，實現無限循環
+            }
+        });
+
+        tl.to(card, { 
+            opacity: 1, 
+            scale: 1, 
+            z: 0, 
+            duration: 1.5, 
+            ease: "power2.out" 
+        })
+        .to(card, { 
+            opacity: 1, 
+            duration: 6 // 訊息停留時間
+        })
+        .to(card, { 
+            opacity: 0, 
+            scale: 1.1, 
+            z: 100, 
+            duration: 1.2, 
+            ease: "power2.in" 
+        });
+    }
+
+    // 啟動系統
+    initSystem();
+    // 每 2 分鐘後台安靜更新一次資料
+    setInterval(updateData, 120000);
+
+    // 空白鍵監聽
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            console.log("觸發鏡開儀式特效");
+            // 這裡放入妳的 Confetti 或蝴蝶動畫代碼
+        }
+    });
+</script>
