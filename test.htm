@@ -1,134 +1,146 @@
-<div id="bg-layer"></div>
-<div id="card-container"></div>
-<div id="status-bar">系統準備中...</div>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Wedding Blessing Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #fdfaf5;
+            --sage-glow: rgba(224, 229, 209, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.7); /* 提高不透明度，確保單螢幕看得見 */
+        }
 
-<style>
-    :root {
-        --cream-bg: #fdfaf5;
-        --sage-green: rgba(224, 229, 209, 0.7);
-    }
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: "STSong", "NSimSun", serif;
+        }
 
-    body, html {
-        margin: 0; padding: 0;
-        width: 100%; height: 100%;
-        background-color: var(--cream-bg);
-        overflow: hidden;
-        font-family: "STSong", "NSimSun", "微軟正黑體", serif;
-    }
+        /* 背景層 */
+        #bg-fixed-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -10;
+            background: 
+                radial-gradient(circle at 20% 20%, var(--sage-glow) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, var(--sage-glow) 0%, transparent 50%);
+            filter: blur(60px);
+        }
 
-    /* 背景修復：強制置底且不擋住互動 */
-    #bg-layer {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100vw; height: 100vh;
-        z-index: -1; /* 關鍵：確保在所有內容後方 */
-        background: 
-            radial-gradient(circle at 15% 15%, var(--sage-green) 0%, transparent 40%),
-            radial-gradient(circle at 85% 85%, var(--sage-green) 0%, transparent 40%);
-        filter: blur(40px);
-    }
+        #app-wrapper {
+            position: relative;
+            width: 100vw; height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1200px;
+            z-index: 1;
+        }
 
-    /* 確保容器是透明的，否則會遮住背景 */
-    #card-container {
-        position: relative;
-        width: 100%; height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        perspective: 1000px; /* 為了 3D 景深感 */
-        background: transparent; 
-        z-index: 10;
-    }
+        /* 磨砂玻璃卡片樣式 */
+        .blessing-card {
+            position: absolute;
+            width: 600px;
+            padding: 50px;
+            border-radius: 30px;
+            text-align: center;
+            background: var(--glass-bg);
+            /* 磨砂玻璃效果核心 */
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            opacity: 0;
+            line-height: 1.8;
+            letter-spacing: 0.1em;
+        }
 
-    /* 訊息卡片：仿宋體縮小兩號 */
-    .blessing-card {
-        position: absolute;
-        width: 600px;
-        padding: 40px;
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
-        border: 1px solid #eee;
-        text-align: center;
-        opacity: 0; /* 初始隱藏 */
-        font-size: 0.9rem; /* 縮小兩號感 */
-        line-height: 1.8;
-        letter-spacing: 0.1em;
-    }
+        .card-name { font-size: 1.4rem; color: #556b2f; margin-bottom: 20px; font-weight: bold; }
+        .card-content { font-size: 1.1rem; color: #333; }
 
-    .blessing-card h3 {
-        color: #556b2f; /* 墨綠色 */
-        margin-bottom: 20px;
-        font-size: 1.2rem;
-    }
-</style>
+        #status-bar {
+            position: fixed; bottom: 10px; left: 10px;
+            font-size: 12px; color: rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script>
-    let messages = [];
-    let currentIndex = 0;
-    const GAS_URL = "你的_GAS_部署網址";
+    <div id="bg-fixed-layer"></div>
+    <div id="app-wrapper">
+        <div id="card-container"></div>
+    </div>
+    <div id="status-bar">正在檢查環境...</div>
 
-    // 1. 抓取資料 (加入時間戳防止快取)
-    async function updateData() {
-        try {
-            const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
-            const rawData = await res.json();
-            // 過濾 D 欄為 ok 的資料
-            messages = rawData.filter(m => m.status === 'ok');
-            document.getElementById('status-bar').innerText = `已載入 ${messages.length} 則祝福`;
+    <script>
+        // 1. 預設測試資料 (如果 GAS 沒抓到，至少會跑這個)
+        const dummyData = [
+            { name: "測試小天使", content: "這是一則測試訊息，如果妳看到這個，代表 CSS 與動畫完全正常！", status: "ok" },
+            { name: "Maggie & Stanley", content: "歡迎來到我們的婚禮，期待在台北東方文華見到大家。", status: "ok" }
+        ];
+
+        let messages = dummyData; 
+        let currentIndex = 0;
+        const GAS_URL = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
+
+        async function initSystem() {
+            document.getElementById('status-bar').innerText = "正在嘗試同步 Google Sheet...";
+            await updateData();
+            startLoop(); 
+        }
+
+        async function updateData() {
+            try {
+                // 加上時間戳防止 GitHub Pages 快取資料
+                const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
+                const rawData = await res.json();
+                const filtered = rawData.filter(m => m.status && m.status.toLowerCase() === 'ok');
+                
+                if (filtered.length > 0) {
+                    messages = filtered;
+                    document.getElementById('status-bar').innerText = `連線成功，共有 ${messages.length} 則祝福`;
+                } else {
+                    document.getElementById('status-bar').innerText = "資料庫目前沒有『ok』的訊息，顯示測試資料。";
+                }
+            } catch (e) {
+                console.error("Fetch Error:", e);
+                document.getElementById('status-bar').innerText = "連線失敗，目前顯示預設測試資料。";
+            }
+        }
+
+        function startLoop() {
+            const container = document.getElementById('card-container');
+            container.innerHTML = ''; 
             
-            // 如果是第一次載入且有資料，啟動輪播
-            if (messages.length > 0 && !window.isStarted) {
-                window.isStarted = true;
-                playNext();
-            }
-        } catch (err) {
-            console.error("資料同步失敗:", err);
+            const msg = messages[currentIndex];
+            const card = document.createElement('div');
+            card.className = 'blessing-card';
+            card.innerHTML = `<div class="card-name">${msg.name}</div><div class="card-content">${msg.content}</div>`;
+            container.appendChild(card);
+
+            const tl = gsap.timeline({
+                onComplete: () => {
+                    card.remove();
+                    currentIndex = (currentIndex + 1) % messages.length;
+                    startLoop();
+                }
+            });
+
+            // 3D 往後飄動畫
+            tl.fromTo(card, 
+                { opacity: 0, scale: 0.8, z: -150 }, 
+                { opacity: 1, scale: 1, z: 0, duration: 1.5, ease: "power2.out" }
+            )
+            .to(card, { opacity: 1, duration: 5 }) 
+            .to(card, { opacity: 0, scale: 0.8, z: -250, duration: 1.2, ease: "power2.in" });
         }
-    }
 
-    // 2. 核心輪播與 GSAP 動畫邏輯
-    function playNext() {
-        if (messages.length === 0) return;
-
-        const container = document.getElementById('card-container');
-        const data = messages[currentIndex];
-
-        // 建立卡片元件
-        const card = document.createElement('div');
-        card.className = 'blessing-card';
-        card.innerHTML = `<h3>${data.name}</h3><div>${data.content}</div>`;
-        container.appendChild(card);
-
-        // GSAP 動畫序列
-        const tl = gsap.timeline({
-            onComplete: () => {
-                card.remove(); // 動畫結束後移除 DOM
-                // 核心循環：播到最後一張自動回到第一張
-                currentIndex = (currentIndex + 1) % messages.length;
-                playNext();
-            }
-        });
-
-        tl.fromTo(card, 
-            { opacity: 0, scale: 0.8, z: -100 }, 
-            { opacity: 1, scale: 1, z: 0, duration: 1.5, ease: "power2.out" }
-        )
-        .to(card, { opacity: 1, duration: 5 }) // 停留時間
-        .to(card, 
-            { opacity: 0, scale: 1.2, z: 200, duration: 1.2, ease: "power2.in" }
-        ); // 向螢幕前方（妳原本想往後，往後則是 z: -200）消失
-    }
-
-    // 鏡開儀式：空白鍵觸發特效
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') {
-            triggerConfetti(); // 呼叫妳原本的 Confetti 函式
-        }
-    });
-
-    // 每分鐘更新一次名單
-    setInterval(updateData, 60000);
-    updateData();
-</script>
+        window.onload = initSystem;
+    </script>
+</body>
+</html>
