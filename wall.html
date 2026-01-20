@@ -7,44 +7,33 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root {
-            --cream-bg: #fdfaf5;
-            --sage-green: #7d8c78;
-            --gold: #c5a059;
-            --text-color: #4a4a4a;
-        }
-
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: var(--cream-bg);
-            font-family: "STFangsong", "NSimSun", "仿宋", serif;
-        }
-
-        /* 1. 背景：讀取 wedding-bg.png */
+        :root { --cream-bg: #fdfaf5; --sage-green: #7d8c78; --gold: #c5a059; --text-color: #4a4a4a; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
+        
+        /* 背景底圖 */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('wedding-bg.png') no-repeat center center;
-            background-size: cover;
-            z-index: 1;
+            background: url('wedding-bg.jpg') no-repeat center center;
+            background-size: cover; z-index: 1;
         }
 
-        /* 2. 主容器：Grid 置中解決 Safari 偏移 */
+        /* 絕對置中容器 (Safari 專用 Grid 佈局) */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            display: grid; place-items: center;
-            z-index: 10; perspective: 1500px;
+            display: grid; place-items: center; z-index: 10; perspective: 1200px;
         }
 
-        /* 3. 經典信紙卡片 */
+        /* 經典信紙風格 */
         .message-card {
             grid-area: 1 / 1;
-            border-radius: 4px;
+            width: 850px; max-width: 85%;
+            padding: 70px 90px;
             background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
             border: 1px solid #f0f0f0;
             outline: 12px solid rgba(255, 255, 255, 0.5);
-            padding: 70px 90px;
-            width: 850px; max-width: 85%;
+            border-radius: 4px;
             text-align: center;
             box-shadow: 0 20px 50px rgba(0,0,0,0.05);
             opacity: 0;
@@ -52,105 +41,95 @@
         }
 
         .message-card::before {
-            content: ""; position: absolute;
-            top: 15px; left: 15px; right: 15px; bottom: 15px;
+            content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px;
             border: 1px solid rgba(125, 140, 120, 0.15); pointer-events: none;
         }
 
         .sender { font-size: 24px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
         .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
-
-        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 11px; color: rgba(0,0,0,0.3); z-index: 100; }
+        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 11px; color: rgba(0,0,0,0.2); z-index: 100; }
     </style>
 </head>
 <body>
 
     <div id="master-bg"></div>
     <div id="display-wrapper"><div id="card-container" style="display: grid; place-items: center;"></div></div>
-    <div id="status-bar">CONNECTING...</div>
+    <div id="status-bar">READY</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        // 預設第一則訊息，確保一開啟就有畫面
+        // 1. 初始化資料 (預設內容，防止卡死)
         let messages = [{ name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n請掃描 QR Code 留下祝福。", status: "ok" }];
         let currentIndex = 0;
-        let hasFetchedData = false;
 
-        // --- 1. 櫻花瓣特效 ---
-        function triggerPetals() {
-            const colors = ['#ffc0cb', '#ffb6c1', '#fff0f5', '#fdf5e6'];
-            confetti({
-                particleCount: 150, spread: 70, origin: { y: 0.6 },
-                colors: colors, shapes: ['circle'], gravity: 0.7, scalar: 1.2, drift: 0.5
-            });
-        }
-
-        // --- 2. 核心輪播 (移植 test.html 內容對應) ---
+        // 2. 核心輪播動畫 (不論資料有沒有抓到，開網頁就立刻跑)
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            container.innerHTML = ''; // 徹底清除，防止重複
+            if (!container) return;
+            container.innerHTML = ''; // 徹底清除
 
-            const currentMsg = messages[currentIndex];
-            const newCard = document.createElement('div');
-            newCard.className = 'message-card';
+            const data = messages[currentIndex];
+            const card = document.createElement('div');
+            card.className = 'message-card';
             
-            // 重要：這裡使用 currentMsg.msg (對應妳 test.html 的欄位)
-            const bodyText = (currentMsg.msg || currentMsg.content || "新婚快樂").replace(/\n/g, '<br>');
-            const senderName = currentMsg.name || "賓客";
+            // 這裡採用雙重保險，適配 test.html 成功的欄位
+            const messageBody = (data.msg || data.content || "新婚快樂").replace(/\n/g, '<br>');
+            const senderName = data.name || "賓客";
 
-            newCard.innerHTML = `
+            card.innerHTML = `
                 <div class="sender">— ${senderName} —</div>
-                <div class="content">${bodyText}</div>
+                <div class="content">${messageBody}</div>
                 <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
             `;
-            container.appendChild(newCard);
+            container.appendChild(card);
 
-            // GSAP 動畫
-            gsap.fromTo(newCard, 
+            // GSAP 動畫序列 (專為 Safari 優化，只動 Scale/Z)
+            const tl = gsap.timeline();
+            tl.fromTo(card, 
                 { opacity: 0, scale: 0.85, z: -200 }, 
                 { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power2.out" }
-            );
-            
-            // 設定 8.5 秒後淡出
-            gsap.to(newCard, { opacity: 0, scale: 0.5, z: -600, delay: 8.5, duration: 1.5, ease: "power2.in" });
+            )
+            .to(card, {
+                opacity: 0, scale: 0.5, z: -600, delay: 8, duration: 1.5, ease: "power2.in"
+            });
 
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // --- 3. 資料抓取 (完全移植 test.html 的寬鬆邏輯) ---
+        // 3. 背景同步資料 (不阻塞主執行緒)
         async function updateData() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
-                
-                // 寬鬆過濾：只要有 "ok" 或沒有 status 欄位都算 (確保 test.html 能動的這裡也能動)
                 const filtered = data.filter(item => {
-                    // 只要任何一格包含 ok 就算通過
                     return Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok');
                 });
-
                 if (filtered.length > 0) {
                     messages = filtered;
-                    document.getElementById('status-bar').innerText = `已載入 ${messages.length} 則祝福`;
-                    
-                    // 第一次抓到資料時，如果還在播預設卡片，立刻切換
-                    if (!hasFetchedData) {
-                        hasFetchedData = true;
-                        // 不強制切換，讓 setInterval 自然接手，但確保資料已更新
-                    }
+                    document.getElementById('status-bar').innerText = `SYNC OK (${messages.length})`;
                 }
-            } catch (e) { console.log("Sync error, using cache."); }
+            } catch (e) { console.log("Background sync paused..."); }
         }
 
-        // --- 4. 啟動 ---
-        window.onload = () => {
-            rotateMessage(); // 立即播放第一張
-            setInterval(rotateMessage, 10000); // 10秒輪播一次
+        // 4. 花瓣特效 (按空白鍵)
+        function triggerPetals() {
+            if (typeof confetti !== 'function') return;
+            confetti({
+                particleCount: 150, spread: 70, origin: { y: 0.7 },
+                colors: ['#ffc0cb', '#ffb6c1', '#fff0f5', '#fdf5e6'],
+                shapes: ['circle'], gravity: 0.7, scalar: 1.2, drift: 0.5
+            });
+        }
 
-            updateData(); // 背景抓取
-            setInterval(updateData, 45000); // 45秒同步一次
+        // --- 啟動機制 ---
+        window.onload = () => {
+            rotateMessage(); // 第一秒立刻開始動
+            setInterval(rotateMessage, 10000); // 每 10 秒切換
+            
+            updateData(); // 背景悄悄抓資料
+            setInterval(updateData, 45000); // 每 45 秒更新一次
         };
 
         window.addEventListener('keydown', (e) => {
