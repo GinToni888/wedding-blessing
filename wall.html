@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie's Wedding Wall - Final Master</title>
+    <title>Wedding Blessing Wall - Final Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root {
@@ -15,11 +15,11 @@
             width: 100%; height: 100%;
             background-color: var(--bg-cream);
             overflow: hidden;
-            font-family: "STSong", "NSimSun", "微軟正黑體", serif;
+            font-family: "STSong", "NSimSun", "serif";
         }
 
-        /* 背景與綠植圖層 */
-        #bg-fixed-layer {
+        /* --- 背景與綠植圖層 --- */
+        #bg-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -10;
         }
@@ -33,31 +33,35 @@
         .plant-tl { top: -5%; left: -5%; width: 45vw; max-width: 800px; }
         .plant-br { bottom: -5%; right: -5%; width: 40vw; max-width: 700px; }
 
-        /* 主容器與 3D 透視 */
+        /* --- 主容器：確保 3D 視角 --- */
         #app-wrapper {
             position: relative;
             width: 100vw; height: 100vh;
-            perspective: 1200px;
+            perspective: 1200px; /* 3D 景深感 */
             z-index: 1;
             background: transparent;
         }
 
-        /* 磨砂玻璃卡片 */
+        /* --- 磨砂玻璃卡片 (核心置中修復) --- */
         .blessing-card {
             position: absolute;
+            /* 關鍵置中設定 */
             top: 50%;
             left: 50%;
             width: 650px;
             padding: 60px 45px;
             box-sizing: border-box;
+            
+            /* 材質：磨砂玻璃 */
             background: var(--glass-white);
             -webkit-backdrop-filter: blur(25px) saturate(130%);
             backdrop-filter: blur(25px) saturate(130%);
             border: 1px solid rgba(255, 255, 255, 0.9);
             border-radius: 35px;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
+            
             text-align: center;
-            opacity: 0;
+            opacity: 0; /* 初始隱藏 */
             transform-style: preserve-3d;
         }
 
@@ -79,7 +83,7 @@
 </head>
 <body>
 
-    <div id="bg-fixed-layer"></div>
+    <div id="bg-layer"></div>
     <img src="plant-top-left.png" class="bg-img plant-tl" alt="">
     <img src="plant-bottom-right.png" class="bg-img plant-br" alt="">
 
@@ -87,81 +91,97 @@
         <div id="card-container"></div>
     </div>
 
-    <div id="status-bar">正在與 Google Sheet 同步中...</div>
+    <div id="status-bar">正在從 Google Sheet 同步祝福...</div>
 
     <script>
-        let messages = [
-            { name: "Maggie & Stanley", content: "歡迎來到我們的婚禮！\n在此留下您的祝福。", status: "ok" }
-        ];
+        let messages = [];
         let currentIndex = 0;
         const GAS_URL = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
 
-        // 輔助函式：忽略大小寫尋找 JSON Key
-        function getValue(obj, keys) {
-            for (let key in obj) {
-                if (keys.includes(key.toLowerCase())) return obj[key];
-            }
-            return null;
-        }
-
-        async function initSystem() {
+        // 1. 初始化系統
+        async function init() {
             await updateData();
+            // 如果沒抓到資料，先提供一則預設訊息，確保畫面不留白
+            if (messages.length === 0) {
+                messages = [{name: "Maggie & Stanley", content: "歡迎來到我們的婚禮！\n請掃描 QR Code 留下祝福。", status: "ok"}];
+            }
             startLoop();
         }
 
+        // 2. 抓取資料 (比照 test.html 成功邏輯)
         async function updateData() {
             try {
                 const r = await fetch(`${GAS_URL}?t=${Date.now()}`);
-                const data = await r.json();
+                const d = await r.json();
+                // 嚴格過濾 status 為 ok 的資料 (不限大小寫)
+                const filtered = d.filter(m => m && m.status && m.status.toLowerCase().trim() === 'ok');
                 
-                // 更強大的資料識別邏輯
-                const filtered = data.map(m => ({
-                    name: getValue(m, ['name', '姓名', 'nickname']) || "賓客",
-                    content: getValue(m, ['content', '內容', 'message']) || "祝福語載入中...",
-                    status: (getValue(m, ['status', '狀態', '審核']) || "").toString().toLowerCase().trim()
-                })).filter(m => m.status === 'ok');
-
                 if (filtered.length > 0) {
                     messages = filtered;
-                    document.getElementById('status-bar').innerText = `已載入 ${messages.length} 則祝福`;
+                    document.getElementById('status-bar').innerText = `已同步 ${messages.length} 則祝福`;
                 }
             } catch (e) {
-                console.warn("同步失敗，維持目前播放。");
+                console.warn("同步失敗，維持目前內容");
             }
         }
 
+        // 3. 無窮循環播放邏輯
         function startLoop() {
             const container = document.getElementById('card-container');
+            
+            // 確保索引不會因為資料更新而越界
+            if (currentIndex >= messages.length) currentIndex = 0;
             const msg = messages[currentIndex];
             
+            // 建立卡片元件
             const card = document.createElement('div');
             card.className = 'blessing-card';
             card.innerHTML = `<div class="card-name">${msg.name}</div><div class="card-content">${msg.content}</div>`;
             container.appendChild(card);
 
+            // GSAP 3D 動畫序列 (往後飄散)
             const tl = gsap.timeline({
                 onComplete: () => {
-                    card.remove();
-                    // 確保索引循環：最後一張回到第一張
+                    card.remove(); // 徹底移除 DOM 避免堆疊
+                    // 計算下一張索引：(0 -> 1 -> 2 -> 0)
                     currentIndex = (currentIndex + 1) % messages.length;
-                    startLoop();
+                    startLoop(); // 遞迴啟動下一輪
                 }
             });
 
-            // 動畫穩定性：即使只有 1 則，也會執行飛入與飄遠
+            // 動畫設定：置中飛入 -> 停留 -> 往後縮小飄散
             tl.fromTo(card, 
                 { 
-                    opacity: 0, scale: 0.8, z: -200, 
-                    xPercent: -50, yPercent: -50, left: "50%", top: "50%"
+                    opacity: 0, 
+                    scale: 0.8, 
+                    z: -200, 
+                    xPercent: -50, 
+                    yPercent: -50,
+                    left: "50%",
+                    top: "50%"
                 }, 
-                { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power2.out" }
+                { 
+                    opacity: 1, 
+                    scale: 1, 
+                    z: 0, 
+                    duration: 1.8, 
+                    ease: "power2.out" 
+                }
             )
-            .to(card, { opacity: 1, duration: 6 }) 
-            .to(card, { opacity: 0, scale: 0.7, z: -400, duration: 1.5, ease: "power2.in" });
+            .to(card, { opacity: 1, duration: 6 }) // 停留 6 秒
+            .to(card, { 
+                opacity: 0, 
+                scale: 0.7, 
+                z: -400, // 向後深處飄動
+                duration: 1.5, 
+                ease: "power2.in" 
+            });
         }
 
-        window.onload = initSystem;
-        setInterval(updateData, 60000); // 每一分鐘悄悄背景更新
+        // 執行
+        window.onload = init;
+        // 每分鐘背景同步一次資料
+        setInterval(updateData, 60000);
     </script>
 </body>
 </html>
