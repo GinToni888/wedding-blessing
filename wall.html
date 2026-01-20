@@ -2,12 +2,12 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie's Wedding Wall - Final Version</title>
+    <title>Wedding Blessing Wall - Final Fixed</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root {
             --bg-cream: #fdfaf5;
-            --glass-white: rgba(255, 255, 255, 0.7); /* 質感磨砂白 */
+            --glass-white: rgba(255, 255, 255, 0.7);
         }
 
         body, html {
@@ -19,32 +19,13 @@
         }
 
         /* --- 背景與綠植圖層 --- */
-        #bg-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -10;
-        }
-
+        #bg-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -10; }
         .bg-img {
-            position: fixed;
-            z-index: -5;
-            pointer-events: none;
-            /* 輕微的呼吸感動畫 */
+            position: fixed; z-index: -5; pointer-events: none;
             animation: plantBreathe 8s ease-in-out infinite;
         }
-
-        /* 左上角主綠植：對應妳的第一個連結 */
-        .plant-tl {
-            top: -8%; left: -8%;
-            width: 50vw; max-width: 900px;
-            transform-origin: top left;
-        }
-
-        /* 右下角副綠植：對應妳的第二個連結 */
-        .plant-br {
-            bottom: -8%; right: -8%;
-            width: 45vw; max-width: 800px;
-            transform-origin: bottom right;
-        }
+        .plant-tl { top: -8%; left: -8%; width: 50vw; max-width: 900px; transform-origin: top left; }
+        .plant-br { bottom: -8%; right: -8%; width: 45vw; max-width: 800px; transform-origin: bottom right; }
 
         @keyframes plantBreathe {
             0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
@@ -65,31 +46,26 @@
             top: 50%; left: 50%;
             width: 650px;
             padding: 60px 45px;
-            
             background: var(--glass-white);
-            -webkit-backdrop-filter: blur(20px) saturate(140%);
-            backdrop-filter: blur(20px) saturate(140%);
+            -webkit-backdrop-filter: blur(25px) saturate(140%);
+            backdrop-filter: blur(25px) saturate(140%);
             border: 1.5px solid rgba(255, 255, 255, 0.8);
             border-radius: 35px;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
-            
             text-align: center;
             opacity: 0;
             transform-style: preserve-3d;
         }
 
-        .card-name {
-            font-size: 1.6rem; color: #7a8a66; margin-bottom: 25px; font-weight: bold; letter-spacing: 0.15em;
-        }
-        .card-content {
-            font-size: 1.15rem; color: #333; line-height: 2; letter-spacing: 0.08em;
-        }
+        .card-name { font-size: 1.6rem; color: #7a8a66; margin-bottom: 25px; font-weight: bold; letter-spacing: 0.15em; }
+        .card-content { font-size: 1.15rem; color: #333; line-height: 2; letter-spacing: 0.08em; }
+        
+        #status-bar { position: fixed; bottom: 10px; left: 10px; font-size: 12px; color: rgba(0,0,0,0.2); z-index: 100; }
     </style>
 </head>
 <body>
 
     <div id="bg-layer"></div>
-    
     <img src="plant-top-left.png" class="bg-img plant-tl" alt="">
     <img src="plant-bottom-right.png" class="bg-img plant-br" alt="">
 
@@ -97,31 +73,49 @@
         <div id="card-container"></div>
     </div>
 
+    <div id="status-bar">正在檢查環境...</div>
+
     <script>
-        let messages = [];
+        // 【保險機制】預設訊息：防止 GAS 失敗時畫面全白
+        let messages = [
+            {name: "Wedding Blessing", content: "期待您的祝福語進入...", status: "ok"},
+            {name: "Maggie & Stanley", content: "歡迎來到我們的婚禮", status: "ok"}
+        ];
+        
         let currentIndex = 0;
+        let isLooping = false;
         const GAS_URL = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
 
         async function initSystem() {
+            document.getElementById('status-bar').innerText = "正在連線 Google 試算表...";
             await updateData();
-            if (messages.length > 0) {
-                startLoop();
-            } else {
-                // 預防全白的測試訊息
-                messages = [{name: "Maggie & Stanley", content: "祝福語載入中，請稍候...", status: "ok"}];
-                startLoop();
-            }
+            // 不論有無抓到資料，都啟動輪播（若沒抓到則用預設訊息）
+            if (!isLooping) startLoop();
         }
 
         async function updateData() {
             try {
                 const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
+                if (!res.ok) throw new Error("網路回應異常");
                 const data = await res.json();
-                messages = data.filter(m => m.status && m.status.toLowerCase() === 'ok');
-            } catch (e) { console.error("Sync failed"); }
+                
+                // 【核心修復】加強空值檢查，防止程式碼崩潰
+                const filtered = data.filter(m => m && m.status && String(m.status).toLowerCase() === 'ok');
+                
+                if (filtered.length > 0) {
+                    messages = filtered;
+                    document.getElementById('status-bar').innerText = `同步成功: ${messages.length} 則祝福`;
+                } else {
+                    document.getElementById('status-bar').innerText = "資料庫目前沒有『ok』的訊息，顯示預設語。";
+                }
+            } catch (e) {
+                console.error("同步失敗:", e);
+                document.getElementById('status-bar').innerText = "連線失敗，目前運作於離線模式。";
+            }
         }
 
         function startLoop() {
+            isLooping = true;
             const container = document.getElementById('card-container');
             const msg = messages[currentIndex];
             
@@ -138,7 +132,7 @@
                 }
             });
 
-            // GSAP 3D 往後飄動畫與強制居中設定
+            // 3D 往後飄動畫 + 強制居中
             tl.fromTo(card, 
                 { opacity: 0, scale: 0.8, z: -200, xPercent: -50, yPercent: -50, left: "50%", top: "50%" }, 
                 { opacity: 1, scale: 1, z: 0, duration: 2, ease: "power2.out" }
@@ -148,6 +142,7 @@
         }
 
         window.onload = initSystem;
+        // 每 60 秒更新一次資料
         setInterval(updateData, 60000); 
     </script>
 </body>
