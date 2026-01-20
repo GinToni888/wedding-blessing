@@ -1,44 +1,247 @@
-async function updateData() {
-    try {
-        const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
-        if (!res.ok) throw new Error("網路請求失敗");
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maggie & Stanley Wedding Blessing Wall</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-cream: #fdfaf5; /* 奶油色底 */
+            --glass-white: rgba(255, 255, 255, 0.75); /* 磨砂玻璃透明度 */
+            --sage-green: #7a8a66; /* 鼠尾草綠 (標題用) */
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg-cream);
+            overflow: hidden;
+            /* 使用仿宋體並設定基本渲染優化 */
+            font-family: "STSong", "NSimSun", "SimSun", serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- 1. 背景與綠植圖層 --- */
+        #bg-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -10;
+        }
+
+        .bg-img {
+            position: fixed;
+            z-index: -5;
+            pointer-events: none;
+            /* 輕微呼吸感 */
+            animation: plantBreathe 10s ease-in-out infinite;
+        }
+
+        /* 根據您提供的 Canva 設計定位 */
+        .plant-tl {
+            top: -5%; left: -5%;
+            width: 48vw; max-width: 900px;
+            transform-origin: top left;
+        }
+
+        .plant-br {
+            bottom: -5%; right: -5%;
+            width: 42vw; max-width: 800px;
+            transform-origin: bottom right;
+            animation-delay: -5s;
+        }
+
+        @keyframes plantBreathe {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+            50% { transform: scale(1.04) rotate(1.5deg); opacity: 1; }
+        }
+
+        /* --- 2. 主內容容器 --- */
+        #app-wrapper {
+            position: relative;
+            width: 100%; height: 100%;
+            perspective: 1200px; /* 開啟 3D 空間感 */
+            z-index: 1;
+        }
+
+        /* --- 3. 磨砂玻璃卡片 (絕對居中) --- */
+        .blessing-card {
+            position: absolute;
+            /* 配合 GSAP xPercent/yPercent 達成完美居中 */
+            top: 50%; left: 50%;
+            width: 650px; 
+            padding: 60px 45px;
+            
+            /* 磨砂玻璃材質設定 */
+            background: var(--glass-white);
+            -webkit-backdrop-filter: blur(20px) saturate(140%);
+            backdrop-filter: blur(20px) saturate(140%);
+            border: 1.5px solid rgba(255, 255, 255, 0.8);
+            border-radius: 35px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.08);
+            
+            text-align: center;
+            opacity: 0; /* 初始隱藏 */
+            transform-style: preserve-3d;
+            box-sizing: border-box;
+        }
+
+        .card-name {
+            font-size: 1.6rem; 
+            color: var(--sage-green); 
+            margin-bottom: 25px; 
+            font-weight: bold; 
+            letter-spacing: 0.2em;
+        }
+
+        .card-content {
+            font-size: 1.15rem; 
+            color: #333; 
+            line-height: 2; 
+            letter-spacing: 0.08em;
+            /* 縮小兩號以展現纖細感 */
+            transform: scale(0.95);
+        }
+
+        /* 系統狀態提示列 (除錯用) */
+        #status-bar {
+            position: fixed; bottom: 12px; left: 15px;
+            font-size: 11px; color: rgba(0,0,0,0.2);
+            z-index: 100;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bg-layer"></div>
+    <img src="plant-top-left.png" class="bg-img plant-tl" alt="">
+    <img src="plant-bottom-right.png" class="bg-img plant-br" alt="">
+
+    <div id="app-wrapper">
+        <div id="card-container"></div>
+    </div>
+
+    <div id="status-bar">正在檢查環境設定...</div>
+
+    <script>
+        // --- 設定與初始化 ---
+        let messages = [
+            { name: "Wedding Team", content: "歡迎來到 Maggie & Stanley 的婚禮，期待與大家在台北東方文華相見！", status: "ok" }
+        ];
+        let currentIndex = 0;
+        let isLooping = false;
         
-        let data = await res.json();
+        // 請確保您的 GAS 連結已經設定為「所有人 (Anyone)」
+        const GAS_URL = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
 
-        // 1. 如果 GAS 包裹了資料（例如回傳 { data: [...] }），則自動展開
-        if (data.data && Array.isArray(data.data)) {
-            data = data.data;
+        async function initSystem() {
+            document.getElementById('status-bar').innerText = "正在讀取 Google Sheet...";
+            await updateData();
+            if (!isLooping) startLoop();
         }
 
-        if (!Array.isArray(data) || data.length === 0) {
-            document.getElementById('status-bar').innerText = "GAS 回傳資料格式錯誤或為空";
-            return;
+        // --- 資料同步邏輯 (強化自動識別欄位) ---
+        async function updateData() {
+            try {
+                const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
+                if (!res.ok) throw new Error("GAS 請求失敗");
+                
+                let data = await res.json();
+                
+                // 如果資料被包裹在 data 屬性中，自動拆包
+                if (data.data && Array.isArray(data.data)) data = data.data;
+
+                // 強化過濾器：同時相容「審核狀態」、「status」與「Status」
+                const filtered = data.filter(m => {
+                    if (!m) return false;
+                    const val = m.status || m.Status || m.審核狀態 || m['審核狀態'];
+                    return val && String(val).toLowerCase().trim() === 'ok';
+                });
+
+                if (filtered.length > 0) {
+                    messages = filtered;
+                    document.getElementById('status-bar').innerText = `同步成功: 已更新 ${messages.length} 則祝福`;
+                } else {
+                    document.getElementById('status-bar').innerText = "資料同步完成，但目前沒有標記為 ok 的訊息。";
+                }
+            } catch (e) {
+                console.error("同步失敗:", e);
+                document.getElementById('status-bar').innerText = "連線失敗，目前顯示預設祝福。";
+            }
         }
 
-        // 2. 自動診斷：輸出第一筆資料的欄位名稱到控制台 (F12)，方便您檢查
-        console.log("收到資料範例:", data[0]);
+        // --- 核心輪播動畫與無限循環 ---
+        function startLoop() {
+            if (messages.length === 0) return;
+            isLooping = true;
+            
+            const container = document.getElementById('card-container');
+            const data = messages[currentIndex];
+            
+            // 建立卡片元件
+            const card = document.createElement('div');
+            card.className = 'blessing-card';
+            card.innerHTML = `
+                <div class="card-name">${data.name}</div>
+                <div class="card-content">${data.content}</div>
+            `;
+            container.appendChild(card);
 
-        // 3. 強化過濾邏輯：同時檢查 'status'、'Status'、'審核狀態'
-        const filtered = data.filter(m => {
-            if (!m) return false;
-            
-            // 找出可能的狀態欄位值 (自動相容中英文標題)
-            const val = m.status || m.Status || m.審核狀態 || m['審核狀態'];
-            
-            // 檢查是否為 'ok' (去除空白並轉小寫)
-            return val && String(val).toLowerCase().trim() === 'ok';
+            // GSAP 3D 動畫序列
+            const tl = gsap.timeline({
+                onComplete: () => {
+                    card.remove(); // 動畫結束後移除舊卡片
+                    currentIndex = (currentIndex + 1) % messages.length; // 無限循環索引
+                    startLoop(); // 遞迴下一張
+                }
+            });
+
+            // 1. 進場：從深處飛入並放大 (Zoom In)
+            tl.fromTo(card, 
+                { 
+                    opacity: 0, scale: 0.8, z: -200, 
+                    xPercent: -50, yPercent: -50, 
+                    left: "50%", top: "50%" 
+                }, 
+                { 
+                    opacity: 1, scale: 1, z: 0, 
+                    duration: 1.8, ease: "power2.out" 
+                }
+            )
+            // 2. 停留：展示 6 秒
+            .to(card, { opacity: 1, duration: 6 }) 
+            // 3. 退場：縮小並向螢幕深處飄動 (Shrink & Recede)
+            .to(card, { 
+                opacity: 0, scale: 0.7, z: -400, 
+                duration: 1.5, ease: "power2.in" 
+            });
+        }
+
+        // --- 鏡開儀式特效 (按下空白鍵觸發) ---
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                triggerKagamiBiraki();
+            }
         });
 
-        if (filtered.length > 0) {
-            messages = filtered;
-            document.getElementById('status-bar').innerText = `同步成功: 已載入 ${messages.length} 則祝福`;
-        } else {
-            // 診斷回饋：如果沒找到 ok，告訴您目前抓到了哪些欄位
-            const keys = Object.keys(data[0]).join(', ');
-            document.getElementById('status-bar').innerText = `錯誤: 找不到 ok。請確認欄位名稱 (${keys})`;
+        function triggerKagamiBiraki() {
+            console.log("🔨 鏡開儀式落槌！");
+            // 噴發奶油色花瓣與金粉
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#FFFDD0', '#D4AF37', '#E0E5D1'] // 奶油、金、鼠尾草綠
+            });
         }
-    } catch (e) {
-        console.error("更新失敗:", e);
-        document.getElementById('status-bar').innerText = "連線失敗，請檢查網路或 GAS 權限";
-    }
-}
+
+        // 初始化
+        window.onload = initSystem;
+        // 每 60 秒背景更新一次資料，不中斷目前的動畫
+        setInterval(updateData, 60000);
+
+    </script>
+</body>
+</html>
