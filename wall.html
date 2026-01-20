@@ -2,13 +2,12 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maggie's Wedding Wall - Master Version</title>
+    <title>Maggie's Wedding Wall - Final Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root {
             --bg-cream: #fdfaf5;
-            --glass-base: rgba(255, 255, 255, 0.75);
+            --glass-white: rgba(255, 255, 255, 0.7);
         }
 
         body, html {
@@ -16,14 +15,13 @@
             width: 100%; height: 100%;
             background-color: var(--bg-cream);
             overflow: hidden;
-            font-family: "STSong", "NSimSun", serif;
+            font-family: "STSong", "NSimSun", "微軟正黑體", serif;
         }
 
-        /* --- 背景與綠植圖層 --- */
+        /* 背景與綠植圖層 */
         #bg-fixed-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -10;
-            background: radial-gradient(circle at 50% 50%, rgba(224, 229, 209, 0.4) 0%, transparent 80%);
         }
 
         .bg-img {
@@ -35,7 +33,7 @@
         .plant-tl { top: -5%; left: -5%; width: 45vw; max-width: 800px; }
         .plant-br { bottom: -5%; right: -5%; width: 40vw; max-width: 700px; }
 
-        /* --- 主容器：確保 3D 視角 --- */
+        /* 主容器與 3D 透視 */
         #app-wrapper {
             position: relative;
             width: 100vw; height: 100vh;
@@ -44,31 +42,27 @@
             background: transparent;
         }
 
-        /* --- 磨砂玻璃卡片 (絕對置中修復) --- */
+        /* 磨砂玻璃卡片 */
         .blessing-card {
             position: absolute;
-            /* 核心修正：利用 top/left 50% 定位 */
             top: 50%;
             left: 50%;
             width: 650px;
             padding: 60px 45px;
             box-sizing: border-box;
-            
-            /* 材質：磨砂玻璃 */
-            background: var(--glass-base);
+            background: var(--glass-white);
             -webkit-backdrop-filter: blur(25px) saturate(130%);
             backdrop-filter: blur(25px) saturate(130%);
             border: 1px solid rgba(255, 255, 255, 0.9);
             border-radius: 35px;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
-            
             text-align: center;
-            opacity: 0; /* 初始隱藏 */
+            opacity: 0;
             transform-style: preserve-3d;
         }
 
         .card-name {
-            font-size: 1.6rem; color: #7a8a66; margin-bottom: 30px; 
+            font-size: 1.6rem; color: #7a8a66; margin-bottom: 25px; 
             font-weight: bold; letter-spacing: 0.15em;
         }
         .card-content {
@@ -93,112 +87,81 @@
         <div id="card-container"></div>
     </div>
 
-    <div id="status-bar">Maggie's Wedding System Loading...</div>
-<script>
-    let messages = [];
-    let currentIndex = 0;
-    let isLooping = false;
+    <div id="status-bar">正在與 Google Sheet 同步中...</div>
 
-    // 1. 請務必確認這個網址是「部署」後的網址，且結尾是 /exec
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
+    <script>
+        let messages = [
+            { name: "Maggie & Stanley", content: "歡迎來到我們的婚禮！\n在此留下您的祝福。", status: "ok" }
+        ];
+        let currentIndex = 0;
+        const GAS_URL = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
 
-    async function initSystem() {
-        const statusBar = document.getElementById('status-bar');
-        statusBar.innerText = "正在連線至 Google Sheet...";
+        // 輔助函式：忽略大小寫尋找 JSON Key
+        function getValue(obj, keys) {
+            for (let key in obj) {
+                if (keys.includes(key.toLowerCase())) return obj[key];
+            }
+            return null;
+        }
 
-        try {
+        async function initSystem() {
             await updateData();
-            
-            // 檢查是否真的有抓到資料
-            if (messages && messages.length > 0) {
-                statusBar.innerText = `同步成功！共有 ${messages.length} 則祝福`;
-                if (!isLooping) startLoop();
-            } else {
-                throw new Error("資料庫內沒有 status 為 'ok' 的祝福語");
+            startLoop();
+        }
+
+        async function updateData() {
+            try {
+                const r = await fetch(`${GAS_URL}?t=${Date.now()}`);
+                const data = await r.json();
+                
+                // 更強大的資料識別邏輯
+                const filtered = data.map(m => ({
+                    name: getValue(m, ['name', '姓名', 'nickname']) || "賓客",
+                    content: getValue(m, ['content', '內容', 'message']) || "祝福語載入中...",
+                    status: (getValue(m, ['status', '狀態', '審核']) || "").toString().toLowerCase().trim()
+                })).filter(m => m.status === 'ok');
+
+                if (filtered.length > 0) {
+                    messages = filtered;
+                    document.getElementById('status-bar').innerText = `已載入 ${messages.length} 則祝福`;
+                }
+            } catch (e) {
+                console.warn("同步失敗，維持目前播放。");
             }
-        } catch (error) {
-            console.error("初始化失敗:", error);
-            statusBar.innerText = "連線失敗: " + error.message + " (改顯示測試資料)";
+        }
+
+        function startLoop() {
+            const container = document.getElementById('card-container');
+            const msg = messages[currentIndex];
             
-            // 萬一連線失敗，強制使用備用資料，確保婚禮現場不白屏
-            messages = [
-                { name: "Maggie & Stanley", content: "歡迎來到我們的婚禮！", status: "ok" },
-                { name: "系統訊息", content: "正在等待第一位賓客留言...", status: "ok" }
-            ];
-            if (!isLooping) startLoop();
+            const card = document.createElement('div');
+            card.className = 'blessing-card';
+            card.innerHTML = `<div class="card-name">${msg.name}</div><div class="card-content">${msg.content}</div>`;
+            container.appendChild(card);
+
+            const tl = gsap.timeline({
+                onComplete: () => {
+                    card.remove();
+                    // 確保索引循環：最後一張回到第一張
+                    currentIndex = (currentIndex + 1) % messages.length;
+                    startLoop();
+                }
+            });
+
+            // 動畫穩定性：即使只有 1 則，也會執行飛入與飄遠
+            tl.fromTo(card, 
+                { 
+                    opacity: 0, scale: 0.8, z: -200, 
+                    xPercent: -50, yPercent: -50, left: "50%", top: "50%"
+                }, 
+                { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power2.out" }
+            )
+            .to(card, { opacity: 1, duration: 6 }) 
+            .to(card, { opacity: 0, scale: 0.7, z: -400, duration: 1.5, ease: "power2.in" });
         }
-    }
 
-    async function updateData() {
-        // 加入時間戳記避免瀏覽器抓到舊的快取
-        const fetchUrl = `${GAS_URL}?t=${new Date().getTime()}`;
-        
-        const response = await fetch(fetchUrl);
-        
-        if (!response.ok) {
-            throw new Error(`網路回應不正常: ${response.status}`);
-        }
-
-        const rawData = await response.json();
-        
-        // 檢查回傳格式是否為陣列
-        if (!Array.isArray(rawData)) {
-            throw new Error("GAS 回傳格式錯誤 (非陣列)");
-        }
-
-        // 過濾資料
-        const filtered = rawData.filter(m => m && m.status && m.status.toLowerCase() === 'ok');
-        
-        if (filtered.length > 0) {
-            messages = filtered;
-        }
-    }
-
-    function startLoop() {
-        if (isLooping) return;
-        isLooping = true;
-        
-        playNext();
-    }
-
-    function playNext() {
-        const container = document.getElementById('card-container');
-        
-        // 確保索引不越界
-        if (currentIndex >= messages.length) currentIndex = 0;
-        
-        const msg = messages[currentIndex];
-        const card = document.createElement('div');
-        card.className = 'blessing-card';
-        card.innerHTML = `
-            <div class="card-name">${msg.name}</div>
-            <div class="card-content">${msg.content}</div>
-        `;
-        container.appendChild(card);
-
-        const tl = gsap.timeline({
-            onComplete: () => {
-                card.remove();
-                // 核心循環：播完最後一張自動回到第一張
-                currentIndex = (currentIndex + 1) % messages.length;
-                playNext();
-            }
-        });
-
-        // 3D 往後飄動畫
-        tl.fromTo(card, 
-            { opacity: 0, scale: 0.7, z: -300, xPercent: -50, yPercent: -50, left: "50%", top: "50%" }, 
-            { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power3.out" }
-        )
-        .to(card, { opacity: 1, duration: 6 }) 
-        .to(card, { opacity: 0, scale: 0.6, z: -500, duration: 1.5, ease: "power2.in" });
-    }
-
-    // 啟動
-    window.onload = initSystem;
-    
-    // 背景每 2 分鐘更新一次
-    setInterval(updateData, 120000);
-</script>
+        window.onload = initSystem;
+        setInterval(updateData, 60000); // 每一分鐘悄悄背景更新
+    </script>
 </body>
 </html>
