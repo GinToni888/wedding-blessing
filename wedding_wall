@@ -9,190 +9,147 @@
             --cream-bg: #fdfaf5;
             --sage-green: #8da086;
             --gold: #c5a059;
-            --card-bg: rgba(255, 255, 255, 0.5);
+            --text-color: #555;
         }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: var(--cream-bg);
-            /* 仿宋字型堆疊，確保不同系統都能抓到 */
             font-family: "STFangsong", "FangSong", "仿宋", "Adobe Fangsong", serif;
+            cursor: none; /* 隱藏滑鼠 */
         }
 
-        /* 漸層背景：奶油森林感 */
+        /* 奶油色漸層背景 */
         .background {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; width: 100%; height: 100%;
             background: radial-gradient(circle at center, #ffffff 0%, #fdf5e6 100%);
             z-index: -2;
         }
 
-        /* 綠植裝飾：直接使用 SVG 繪製尤加利葉感 */
-        .leaf-decoration {
-            position: absolute; opacity: 0.4; z-index: -1;
-            filter: blur(1px); /* 輕微柔焦增加韓式氛圍 */
+        /* 綠植裝飾 - 使用更明顯的 SVG */
+        .leaf {
+            position: absolute; fill: var(--sage-green); opacity: 0.3; z-index: -1;
         }
-        .top-left { top: -20px; left: -20px; width: 400px; transform: rotate(-10deg); }
-        .bottom-right { bottom: -20px; right: -20px; width: 450px; transform: rotate(170deg); }
+        .top-left { top: -50px; left: -50px; width: 400px; transform: rotate(-15deg); }
+        .bottom-right { bottom: -50px; right: -50px; width: 450px; transform: rotate(165deg); }
 
-        /* 訊息卡片容器 */
         #display-container {
             display: flex; justify-content: center; align-items: center;
             height: 100vh; width: 100vw;
         }
 
         .message-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 40px;
-            padding: 80px 100px;
-            max-width: 65%;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 35px;
+            padding: 50px 70px;
+            max-width: 60%;
             text-align: center;
-            box-shadow: 0 30px 60px rgba(125, 140, 120, 0.1);
-            animation: cardFadeIn 2s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.03);
+            transition: opacity 1s ease-in-out;
         }
 
         .sender {
-            font-size: 28px; color: var(--sage-green);
-            margin-bottom: 40px; letter-spacing: 0.2em;
+            font-size: 20px; /* 縮小兩號 */
+            color: var(--sage-green);
+            margin-bottom: 25px;
+            letter-spacing: 0.1em;
         }
 
         .content {
-            font-size: 48px; line-height: 1.8; color: #444;
-            margin-bottom: 50px; font-weight: 500;
+            font-size: 32px; /* 縮小兩號 (原48px) */
+            line-height: 1.7;
+            color: var(--text-color);
+            margin-bottom: 35px;
         }
 
         .wedding-tag {
             font-family: 'Playfair Display', serif;
-            font-style: italic; font-size: 22px; color: var(--gold);
+            font-style: italic; font-size: 18px; color: var(--gold);
         }
 
-        @keyframes cardFadeIn {
-            from { opacity: 0; transform: scale(0.95) translateY(30px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        /* 特效畫布 */
         #fx-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
-        
-        /* 測試小工具：確保你在 Extend 模式下點擊一下畫面確保「焦點」 */
-        #debug-hint {
-            position: fixed; bottom: 20px; width: 100%; text-align: center;
-            color: #ccc; font-size: 14px; pointer-events: none;
-        }
     </style>
 </head>
-<body>
+<body onclick="this.focus();"> <div class="background"></div>
 
-    <div class="background"></div>
-
-    <svg class="leaf-decoration top-left" viewBox="0 0 200 200">
-        <path fill="#7d8c78" d="M40,100 C40,70 70,40 100,40 C130,40 160,70 160,100 C160,130 130,160 100,160 C70,160 40,130 40,100" opacity="0.6"/>
-        <path fill="#8da086" d="M10,120 C10,90 40,70 70,70 C100,70 120,90 120,120 C120,150 100,170 70,170 C40,170 10,150 10,120" opacity="0.4"/>
+    <svg class="leaf top-left" viewBox="0 0 200 200">
+        <path d="M100,20 C120,50 180,60 180,100 C180,140 120,150 100,180 C80,150 20,140 20,100 C20,60 80,50 100,20" />
     </svg>
-    <svg class="leaf-decoration bottom-right" viewBox="0 0 200 200">
-        <path fill="#7d8c78" d="M40,100 C40,70 70,40 100,40 C130,40 160,70 160,100 C160,130 130,160 100,160 C70,160 40,130 40,100" opacity="0.6"/>
-        <path fill="#a4b49d" d="M50,150 C50,120 80,100 110,100 C140,100 160,120 160,150 C160,180 140,200 110,200 C80,200 50,180 50,150" opacity="0.5"/>
+    <svg class="leaf bottom-right" viewBox="0 0 200 200">
+        <path d="M100,20 C120,50 180,60 180,100 C180,140 120,150 100,180 C80,150 20,140 20,100 C20,60 80,50 100,20" />
     </svg>
 
     <div id="display-container">
         <div id="card-target">
             <div class="message-card">
-                <div class="sender">— Maggie & Stanley —</div>
-                <div class="content">點擊畫面任一處後<br>按「空白鍵」測試鏡開儀式特效</div>
-                <div class="wedding-tag">April 2026 @ Mandarin Oriental</div>
+                <div class="sender">Maggie & Stanley</div>
+                <div class="content">祝福載入中...</div>
+                <div class="wedding-tag">Mandarin Oriental Taipei</div>
             </div>
         </div>
     </div>
 
-    <div id="debug-hint">螢幕模式：Extend Mode | 目前狀態：等待測試</div>
-
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script>
-        const mockMessages = [
-            { name: "Maggie & Stanley", msg: "歡迎來到我們的森林婚禮<br>請在 LINE 留下給我們的祝福" },
-            { name: "好友 宇軒", msg: "祝 Maggie & Stanley 新婚快樂！<br>永遠像今天一樣幸福甜蜜。" },
-            { name: "國中同學 小雅", msg: "韓式風格真的太適合 Maggie 了！<br>緞面婚紗美出新高度！" },
-            { name: "Stanley 的同事", msg: "阿貝要好好疼老婆喔！<br>早生貴子，幸福滿滿。" }
-        ];
-
+        const gasUrl = "你的_GAS_網頁應用程式網址"; // 貼上零件 A 的網址
+        let messages = [{ name: "Maggie & Stanley", msg: "歡迎參加我們的婚禮" }];
         let currentIndex = 0;
 
-        function updateMessage() {
-            const cardTarget = document.getElementById('card-target');
-            const data = mockMessages[currentIndex];
+        // 每 10 秒向 Google Sheet 更新一次資料
+        async function fetchMessages() {
+            try {
+                const response = await fetch(gasUrl);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    messages = data;
+                }
+            } catch (err) {
+                console.error("無法讀取資料", err);
+            }
+        }
+
+        function rotateMessage() {
+            const container = document.getElementById('card-target');
+            const data = messages[currentIndex];
             
-            // 先淡出
-            cardTarget.style.opacity = 0;
+            container.style.opacity = 0;
             
             setTimeout(() => {
-                cardTarget.innerHTML = `
+                container.innerHTML = `
                     <div class="message-card">
                         <div class="sender">— ${data.name} —</div>
-                        <div class="content">${data.msg}</div>
-                        <div class="wedding-tag">M & S Forever Love</div>
+                        <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
+                        <div class="wedding-tag">Love in April 2026</div>
                     </div>
                 `;
-                cardTarget.style.opacity = 1;
-                currentIndex = (currentIndex + 1) % mockMessages.length;
+                container.style.opacity = 1;
+                currentIndex = (currentIndex + 1) % messages.length;
             }, 1000);
         }
 
-        setInterval(updateMessage, 8000);
+        // 初始化
+        fetchMessages();
+        setInterval(fetchMessages, 20000); // 每 20 秒背景更新一次資料庫
+        setInterval(rotateMessage, 8000);   // 每 8 秒切換一則顯示
 
-        // --- 互動功能解決方案 ---
-
-        // 解決空白鍵沒反應的問題：
-        // 1. 確保使用者點擊過畫面（取得焦點）
-        // 2. 監聽 Keydown 事件
-        window.addEventListener('keydown', function(e) {
+        // 空白鍵監聽 (確保先點擊一下網頁)
+        window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
-                e.preventDefault(); // 防止網頁向下捲動
+                e.preventDefault();
                 triggerKagamiBiraki();
             }
         });
 
-        // 也支援點擊螢幕觸發 (方便測試)
-        window.addEventListener('click', function() {
-            console.log("螢幕已取得焦點");
-        });
-
         function triggerKagamiBiraki() {
-            console.log("觸發鏡開儀式特效！");
-            
-            // 韓式奶油色調花瓣與金粉
-            const colors = ['#fdf5e6', '#8da086', '#c5a059', '#ffffff'];
-            
             confetti({
                 particleCount: 150,
                 spread: 70,
                 origin: { y: 0.6 },
-                colors: colors,
-                ticks: 200,
-                gravity: 0.8,
-                scalar: 1.2,
-                shapes: ['circle']
+                colors: ['#fdf5e6', '#8da086', '#c5a059', '#ffffff']
             });
-
-            // 側邊噴發感
-            setTimeout(() => {
-                confetti({
-                    particleCount: 80,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0 },
-                    colors: colors
-                });
-                confetti({
-                    particleCount: 80,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1 },
-                    colors: colors
-                });
-            }, 200);
         }
     </script>
 </body>
