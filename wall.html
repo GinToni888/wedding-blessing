@@ -8,7 +8,7 @@
         :root {
             --cream-bg: #fdfaf5;
             --sage-green: #7d8c78;
-            --flower-pink: #f8e1e1;
+            --flower-pink: #f8e1e1; /* 奶油色/淡粉色花瓣 */
             --gold: #c5a059;
             --text-color: #4a4a4a;
         }
@@ -26,102 +26,71 @@
             z-index: -5;
         }
 
-        /* --- 背景綠植系統 --- */
+        /* --- 綠植與開花系統 --- */
         .forest-container {
             position: fixed; width: 100%; height: 100%;
-            pointer-events: none; z-index: -2; /* 確保在卡片後方 */
+            pointer-events: none; z-index: -1;
         }
 
         .leaf-group {
-            position: absolute; fill: var(--sage-green); opacity: 0.6;
-            animation: forestSway 10s ease-in-out infinite; filter: blur(2px);
+            position: absolute;
+            fill: var(--sage-green);
+            opacity: 0.6;
+            animation: forestSway 10s ease-in-out infinite;
         }
         .top-left { top: -40px; left: -40px; width: 450px; }
         .bottom-right { bottom: -60px; right: -60px; width: 500px; transform: rotate(180deg); }
 
-        .flower { fill: var(--flower-pink); opacity: 0; transform: scale(0); transition: all 2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .blooming .flower { opacity: 0.8; transform: scale(1); }
-        @keyframes forestSway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+        /* 初始隱藏的花朵 */
+        .flower {
+            fill: var(--flower-pink);
+            opacity: 0;
+            transform: scale(0);
+            transition: all 2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .blooming .flower {
+            opacity: 0.8;
+            transform: scale(1);
+        }
+
+        @keyframes forestSway {
+            0%, 100% { transform: rotate(-2deg); }
+            50% { transform: rotate(2deg); }
+        }
 
         /* --- 蝴蝶系統 --- */
         .butterfly {
-            position: fixed; width: 20px; height: 20px; background: rgba(255, 255, 255, 0.8);
-            border-radius: 50% 50% 0 50%; pointer-events: none; z-index: 50; filter: blur(1px); display: none;
+            position: fixed;
+            width: 20px; height: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50% 50% 0 50%;
+            pointer-events: none;
+            z-index: 50;
+            filter: blur(1px);
+            display: none; /* 觸發前隱藏 */
         }
 
-        /* --- 訊息容器設置 --- */
+        /* --- 訊息字卡 --- */
         #display-container {
-            position: relative; /* 為絕對定位的卡片提供基準 */
-            width: 100vw; height: 100vh;
-            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; width: 100vw;
         }
-
-        /* --- 核心：竹葉形狀訊息卡片 --- */
         .message-card {
-            position: absolute; /* 絕對定位以實現重疊和移動 */
-            top: 50%; left: 50%;
-            /* 初始狀態：居中 */
-            transform: translate(-50%, -50%) scale(1) rotate(0deg);
-            
-            /* 竹葉形狀塑造：利用不規則圓角 */
-            border-radius: 80% 20% 80% 20% / 40% 60% 40% 60%;
-            
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            padding: 80px 120px; /* 加大內邊距以適應尖角 */
-            width: 850px; max-width: 80%; text-align: center;
-            box-shadow: 0 30px 60px rgba(125, 140, 120, 0.15);
-            
-            /* 進場動畫：預設套用 */
-            animation: leafEnter 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-            z-index: 10; /* 確保新卡片在最上層 */
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50px; padding: 60px 100px;
+            width: 950px; text-align: center;
+            box-shadow: 0 30px 60px rgba(125, 140, 120, 0.1);
+            transition: opacity 1.2s ease-in-out;
         }
-
-        .sender { font-size: 22px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
-        .content { font-size: 32px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
+        .sender { font-size: 20px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
+        .content { font-size: 30px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
-
-        /* --- 動畫定義區 --- */
-        
-        /* 1. 進場動畫：從下方浮現 */
-        @keyframes leafEnter {
-            from { opacity: 0; transform: translate(-50%, -30%) scale(0.9); }
-            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        }
-
-        /* 2. 退場動畫 A：飄向左上角植物區 */
-        @keyframes floatToTL {
-            to { 
-                opacity: 0; 
-                /* 移動到左上，縮小，旋轉，並變模糊 */
-                transform: translate(-120%, -150%) scale(0.5) rotate(-15deg); 
-                filter: blur(10px);
-            }
-        }
-
-        /* 3. 退場動畫 B：飄向右下角植物區 */
-        @keyframes floatToBR {
-            to { 
-                opacity: 0; 
-                transform: translate(20%, 50%) scale(0.5) rotate(15deg); 
-                filter: blur(10px);
-            }
-        }
-
-        /* 退場用的 class */
-        .card-exit-tl {
-            z-index: 5; /* 退場時層級降低 */
-            animation: floatToTL 2.5s ease-in-out forwards !important; /* 覆蓋進場動畫 */
-        }
-        .card-exit-br {
-            z-index: 5;
-            animation: floatToBR 2.5s ease-in-out forwards !important;
-        }
 
         #status-info {
             position: fixed; bottom: 20px; left: 20px; font-size: 13px; color: #aaa;
-            background: rgba(255,255,255,0.7); padding: 5px 15px; border-radius: 20px; z-index: 100;
+            background: rgba(255,255,255,0.7); padding: 5px 15px; border-radius: 20px;
         }
     </style>
 </head>
@@ -131,20 +100,29 @@
 
     <div class="forest-container" id="forest">
         <svg class="leaf-group top-left" viewBox="0 0 200 200">
-            <circle cx="50" cy="80" r="40" /><circle cx="100" cy="50" r="45" /><circle cx="140" cy="90" r="35" />
-            <circle class="flower" cx="60" cy="70" r="15" /><circle class="flower" cx="120" cy="60" r="20" />
+            <circle cx="50" cy="80" r="40" />
+            <circle cx="100" cy="50" r="45" />
+            <circle cx="140" cy="90" r="35" />
+            <circle class="flower" cx="60" cy="70" r="15" />
+            <circle class="flower" cx="120" cy="60" r="20" />
         </svg>
+
         <svg class="leaf-group bottom-right" viewBox="0 0 200 200">
-            <circle cx="50" cy="80" r="40" /><circle cx="100" cy="50" r="45" /><circle cx="140" cy="90" r="35" />
-            <circle class="flower" cx="70" cy="60" r="18" /><circle class="flower" cx="130" cy="80" r="12" />
+            <circle cx="50" cy="80" r="40" />
+            <circle cx="100" cy="50" r="45" />
+            <circle cx="140" cy="90" r="35" />
+            <circle class="flower" cx="70" cy="60" r="18" />
+            <circle class="flower" cx="130" cy="80" r="12" />
         </svg>
     </div>
 
     <div id="display-container">
-        <div class="message-card active-card">
-            <div class="sender">Maggie & Stanley</div>
-            <div class="content">森林系祝福牆啟動中...<br>請點擊畫面任一處啟動空白鍵功能</div>
-            <div class="wedding-tag">Love at Mandarin Oriental</div>
+        <div id="card-target">
+            <div class="message-card">
+                <div class="sender">Maggie & Stanley</div>
+                <div class="content">森林系祝福牆啟動中...<br>請點擊畫面任一處啟動空白鍵功能</div>
+                <div class="wedding-tag">Love at Mandarin Oriental</div>
+            </div>
         </div>
     </div>
 
@@ -158,9 +136,8 @@
 
         let messages = [];
         let currentIndex = 0;
-        let exitDirectionToggle = false; // 用來切換退場方向
         const statusInfo = document.getElementById('status-info');
-        const displayContainer = document.getElementById('display-container');
+        const cardTarget = document.getElementById('card-target');
 
         async function fetchMessages() {
             try {
@@ -169,74 +146,78 @@
                 if (data && data.length > 0) {
                     messages = data;
                     statusInfo.innerText = `✅ 同步成功: ${data.length} 則祝福`;
-                    // 如果當前顯示的是初始訊息，立刻切換
-                    const currentCard = document.querySelector('.active-card .content');
-                    if (currentCard && currentCard.innerText.includes("啟動中")) rotateMessage();
+                    if (cardTarget.innerText.includes("啟動中")) rotateMessage();
                 }
             } catch (err) { statusInfo.innerText = "❌ 連線失敗: " + err.message; }
         }
 
-        // --- 全新的輪播邏輯：新增與移除 DOM 元素 ---
         function rotateMessage() {
             if (messages.length === 0) return;
-
-            // 1. 找到當前正在顯示的舊卡片
-            const oldCard = document.querySelector('.message-card.active-card');
-
-            if (oldCard) {
-                // 移除活躍標記
-                oldCard.classList.remove('active-card');
-                // 決定退場方向 (左右交替)
-                exitDirectionToggle = !exitDirectionToggle;
-                oldCard.classList.add(exitDirectionToggle ? 'card-exit-tl' : 'card-exit-br');
-                
-                // 2.5秒動畫結束後，從 DOM 中移除舊卡片元素
-                setTimeout(() => {
-                    if(oldCard.parentNode) oldCard.parentNode.removeChild(oldCard);
-                }, 2500);
-            }
-
-            // 2. 準備新資料
             const data = messages[currentIndex];
-            
-            // 3. 創建全新的卡片元素
-            const newCard = document.createElement('div');
-            newCard.className = 'message-card active-card'; // 自動套用進場動畫
-            newCard.innerHTML = `
-                <div class="sender">— ${data.name} —</div>
-                <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
-                <div class="wedding-tag">Forever Love 2026.04</div>
-            `;
-
-            // 4. 將新卡片加入容器
-            displayContainer.appendChild(newCard);
-
-            // 更新索引
-            currentIndex = (currentIndex + 1) % messages.length;
+            cardTarget.style.opacity = 0;
+            setTimeout(() => {
+                cardTarget.innerHTML = `
+                    <div class="message-card">
+                        <div class="sender">— ${data.name} —</div>
+                        <div class="content">${data.msg.replace(/\n/g, '<br>')}</div>
+                        <div class="wedding-tag">Forever Love 2026.04</div>
+                    </div>
+                `;
+                cardTarget.style.opacity = 1;
+                currentIndex = (currentIndex + 1) % messages.length;
+            }, 1000);
         }
 
-        // --- 鏡開儀式保持不變 ---
+        // --- 鏡開儀式：落槌動作 ---
         function triggerKagamiBiraki() {
+            // 1. 綠植開花
             document.getElementById('forest').classList.add('blooming');
+
+            // 2. 蝴蝶飛舞 (使用 GSAP 動畫)
             spawnButterflies();
-            confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 }, colors: ['#fdf5e6', '#7d8c78', '#c5a059', '#ffffff'], ticks: 300, scalar: 1.2 });
+
+            // 3. 金粉花瓣噴發
+            confetti({
+                particleCount: 200, spread: 80, origin: { y: 0.6 },
+                colors: ['#fdf5e6', '#7d8c78', '#c5a059', '#ffffff'],
+                ticks: 300, scalar: 1.2
+            });
+
             statusInfo.innerText = "✨ 鏡開儀式落槌！蝴蝶飛舞、森林開花 ✨";
         }
 
         function spawnButterflies() {
             for (let i = 0; i < 15; i++) {
-                const b = document.createElement('div'); b.className = 'butterfly'; b.style.display = 'block'; b.style.left = '50%'; b.style.top = '60%';
+                const b = document.createElement('div');
+                b.className = 'butterfly';
+                b.style.display = 'block';
+                b.style.left = '50%';
+                b.style.top = '60%';
                 document.body.appendChild(b);
-                gsap.to(b, { x: (Math.random() - 0.5) * window.innerWidth * 1.5, y: (Math.random() - 1) * window.innerHeight * 1.5, rotation: Math.random() * 360, opacity: 0, duration: 4 + Math.random() * 2, ease: "power1.out", onComplete: () => b.remove() });
+
+                // 隨機飛向四周
+                gsap.to(b, {
+                    x: (Math.random() - 0.5) * window.innerWidth * 1.5,
+                    y: (Math.random() - 1) * window.innerHeight * 1.5,
+                    rotation: Math.random() * 360,
+                    opacity: 0,
+                    duration: 4 + Math.random() * 2,
+                    ease: "power1.out",
+                    onComplete: () => b.remove()
+                });
             }
         }
 
-        window.addEventListener('keydown', (e) => { if (e.code === 'Space' || e.keyCode === 32) { e.preventDefault(); triggerKagamiBiraki(); } });
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.keyCode === 32) {
+                e.preventDefault();
+                triggerKagamiBiraki();
+            }
+        });
 
         fetchMessages();
         setInterval(fetchMessages, 20000);
-        // 將輪播時間稍微拉長，讓退場動畫演完
-        setInterval(rotateMessage, 9000); 
+        setInterval(rotateMessage, 8000);
     </script>
 </body>
 </html>
