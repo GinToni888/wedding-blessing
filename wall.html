@@ -20,7 +20,7 @@
             font-family: "STFangsong", "NSimSun", "仿宋", serif;
         }
 
-        /* 1. 背景：請確保上傳了 wedding-bg.png */
+        /* 1. 背景：讀取 wedding-bg.png */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
@@ -28,16 +28,14 @@
             z-index: 1;
         }
 
-        /* 2. 主容器：使用 CSS Grid 解決 Safari 偏移與卡片亂飄 */
+        /* 2. 主容器：Grid 置中解決 Safari 偏移 */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            display: grid;
-            place-items: center;
-            z-index: 10;
-            perspective: 1500px;
+            display: grid; place-items: center;
+            z-index: 10; perspective: 1500px;
         }
 
-        /* 3. 經典信紙卡片 (融合 test.html 風格) */
+        /* 3. 經典信紙卡片 */
         .message-card {
             grid-area: 1 / 1;
             border-radius: 4px;
@@ -60,7 +58,7 @@
         }
 
         .sender { font-size: 24px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
-        .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; font-weight: 500; }
+        .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
         #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 11px; color: rgba(0,0,0,0.3); z-index: 100; }
@@ -69,25 +67,19 @@
 <body>
 
     <div id="master-bg"></div>
-
-    <div id="display-wrapper">
-        <div id="card-container" style="display: grid; place-items: center;"></div>
-    </div>
-
-    <div id="status-bar">CONNECTING TO CLOUD...</div>
+    <div id="display-wrapper"><div id="card-container" style="display: grid; place-items: center;"></div></div>
+    <div id="status-bar">CONNECTING...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        // 1. 初始化資料 (預設內容，保證一開啟就有東西看)
-        let messages = [
-            { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n請掃描 QR Code 留下祝福。", status: "ok" }
-        ];
+        // 預設第一則訊息，確保一開啟就有畫面
+        let messages = [{ name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n請掃描 QR Code 留下祝福。", status: "ok" }];
         let currentIndex = 0;
+        let hasFetchedData = false;
 
-        // 2. 落櫻花瓣效果
+        // --- 1. 櫻花瓣特效 ---
         function triggerPetals() {
-            if (typeof confetti !== 'function') return; // 防止庫未載入報錯
             const colors = ['#ffc0cb', '#ffb6c1', '#fff0f5', '#fdf5e6'];
             confetti({
                 particleCount: 150, spread: 70, origin: { y: 0.6 },
@@ -95,86 +87,74 @@
             });
         }
 
-        // 3. 核心輪播 (保證不重複、不亂飄)
+        // --- 2. 核心輪播 (移植 test.html 內容對應) ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            if (!container) return;
-
-            // 徹底清空容器，防止卡片堆疊
-            container.innerHTML = '';
+            container.innerHTML = ''; // 徹底清除，防止重複
 
             const currentMsg = messages[currentIndex];
             const newCard = document.createElement('div');
             newCard.className = 'message-card';
             
-            // 自動適配欄位名稱 (適配 test.html 裡的內容)
-            const sender = currentMsg.name || "賓客";
-            const bodyText = (currentMsg.msg || currentMsg.content || "新婚快樂！").replace(/\n/g, '<br>');
+            // 重要：這裡使用 currentMsg.msg (對應妳 test.html 的欄位)
+            const bodyText = (currentMsg.msg || currentMsg.content || "新婚快樂").replace(/\n/g, '<br>');
+            const senderName = currentMsg.name || "賓客";
 
             newCard.innerHTML = `
-                <div class="sender">— ${sender} —</div>
+                <div class="sender">— ${senderName} —</div>
                 <div class="content">${bodyText}</div>
-                <div class="wedding-tag">April 2026 @ Mandarin Oriental</div>
+                <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
             `;
             container.appendChild(newCard);
 
-            // GSAP 動畫 (物理縮放，解決 Safari 位移)
-            if (window.gsap) {
-                const tl = gsap.timeline();
-                tl.fromTo(newCard, 
-                    { opacity: 0, scale: 0.85, z: -200 }, 
-                    { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power2.out" }
-                )
-                .to(newCard, {
-                    opacity: 0, scale: 0.5, z: -600, delay: 7.5, duration: 1.5, ease: "power2.in"
-                });
-            } else {
-                // 如果 GSAP 沒載入，至少要有基礎顯示
-                newCard.style.opacity = 1;
-            }
+            // GSAP 動畫
+            gsap.fromTo(newCard, 
+                { opacity: 0, scale: 0.85, z: -200 }, 
+                { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power2.out" }
+            );
+            
+            // 設定 8.5 秒後淡出
+            gsap.to(newCard, { opacity: 0, scale: 0.5, z: -600, delay: 8.5, duration: 1.5, ease: "power2.in" });
 
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // 4. 強效資料同步 (完全移植 test.html 邏輯)
+        // --- 3. 資料抓取 (完全移植 test.html 的寬鬆邏輯) ---
         async function updateData() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
                 
-                // 寬鬆過濾：只要有寫 ok 就通過
+                // 寬鬆過濾：只要有 "ok" 或沒有 status 欄位都算 (確保 test.html 能動的這裡也能動)
                 const filtered = data.filter(item => {
+                    // 只要任何一格包含 ok 就算通過
                     return Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok');
                 });
 
                 if (filtered.length > 0) {
                     messages = filtered;
-                    document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length} MESSAGES`;
+                    document.getElementById('status-bar').innerText = `已載入 ${messages.length} 則祝福`;
+                    
+                    // 第一次抓到資料時，如果還在播預設卡片，立刻切換
+                    if (!hasFetchedData) {
+                        hasFetchedData = true;
+                        // 不強制切換，讓 setInterval 自然接手，但確保資料已更新
+                    }
                 }
-            } catch (e) {
-                document.getElementById('status-bar').innerText = "SYNCING...";
-            }
+            } catch (e) { console.log("Sync error, using cache."); }
         }
 
-        // 5. 啟動機制：保證一秒啟動
+        // --- 4. 啟動 ---
         window.onload = () => {
-            // A. 立刻播放第一則 (不等待雲端，防止卡死)
-            rotateMessage();
-            
-            // B. 設定輪播循環 (10秒一張)
-            setInterval(rotateMessage, 10000);
+            rotateMessage(); // 立即播放第一張
+            setInterval(rotateMessage, 10000); // 10秒輪播一次
 
-            // C. 背景同步雲端資料
-            updateData();
-            setInterval(updateData, 45000); 
+            updateData(); // 背景抓取
+            setInterval(updateData, 45000); // 45秒同步一次
         };
 
-        // 鍵盤監聽 (空白鍵噴花)
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                triggerPetals();
-            }
+            if (e.code === 'Space') { e.preventDefault(); triggerPetals(); }
         });
     </script>
 </body>
