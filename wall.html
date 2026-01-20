@@ -20,7 +20,7 @@
             font-family: "STFangsong", "NSimSun", "仿宋", serif;
         }
 
-        /* 1. 背景圖層：請上傳 1920x1080 的 wedding-bg.png */
+        /* 1. 背景：請確保上傳了 wedding-bg.png */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
@@ -37,9 +37,9 @@
             perspective: 1500px;
         }
 
-        /* 3. 經典信紙卡片風格 (來自 test.html) */
+        /* 3. 經典信紙卡片風格 */
         .message-card {
-            grid-area: 1 / 1;
+            grid-area: 1 / 1; /* 強制所有卡片重疊在同一個中心點 */
             border-radius: 4px;
             background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
@@ -53,7 +53,6 @@
             will-change: transform, opacity;
         }
 
-        /* 信紙邊框線 */
         .message-card::before {
             content: ""; position: absolute;
             top: 15px; left: 15px; right: 15px; bottom: 15px;
@@ -72,7 +71,7 @@
     <div id="master-bg"></div>
 
     <div id="display-wrapper">
-        <div id="card-container"></div>
+        <div id="card-container" style="display: grid; place-items: center;"></div>
     </div>
 
     <div id="status-bar">CONNECTING...</div>
@@ -80,13 +79,12 @@
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        // 1. 初始化資料 (預設資料確保不卡死)
         let messages = [
-            { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n祝福訊息花園。", status: "ok" }
+            { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n正在同步雲端祝福語...", status: "ok" }
         ];
         let currentIndex = 0;
 
-        // 2. 落櫻花瓣 (按空白鍵觸發)
+        // --- 1. 櫻花瓣特效 ---
         function triggerPetals() {
             const colors = ['#ffc0cb', '#ffb6c1', '#fff0f5', '#fdf5e6'];
             confetti({
@@ -95,12 +93,11 @@
             });
         }
 
-        // 3. 核心輪播 (每次執行都清空，保證不重複)
+        // --- 2. 核心輪播 (保證不重複、不亂飄) ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            if (messages.length === 0) return;
-
-            // A. 強制清除容器，防止卡片堆疊
+            
+            // 每次切換前徹底清空容器
             container.innerHTML = '';
 
             const currentMsg = messages[currentIndex];
@@ -113,7 +110,7 @@
             `;
             container.appendChild(newCard);
 
-            // B. GSAP 進場與自動退場
+            // GSAP 動畫 (只控制縮放與景深，確保 Safari 不偏移)
             const tl = gsap.timeline();
             tl.fromTo(newCard, 
                 { opacity: 0, scale: 0.85, z: -200 }, 
@@ -126,13 +123,13 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // 4. 資料抓取 (背景執行，不影響動畫)
+        // --- 3. 資料抓取 (非阻塞模式) ---
         async function updateData() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
                 
-                // 寬鬆抓取：只要任何欄位有 OK 就過濾
+                // 寬鬆識別邏輯
                 const filtered = data.filter(item => {
                     return Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok');
                 }).map(item => {
@@ -145,26 +142,25 @@
 
                 if (filtered.length > 0) {
                     messages = filtered;
-                    document.getElementById('status-bar').innerText = `已同步雲端: ${messages.length} 則祝福`;
+                    document.getElementById('status-bar').innerText = `已載入 ${messages.length} 則祝福`;
                 }
             } catch (e) {
-                console.log("資料同步中...");
+                console.log("Syncing...");
             }
         }
 
-        // 5. 啟動與監聽
+        // --- 4. 啟動 ---
         window.onload = () => {
-            // A. 立刻播放第一張卡片
+            // A. 立刻播放 (不等待 Fetch，防止卡死)
             rotateMessage();
-            
-            // B. 設定輪播與同步定時器
             setInterval(rotateMessage, 10000); 
-            
-            // C. 背景抓取資料
+
+            // B. 背景同步
             updateData();
             setInterval(updateData, 45000); 
         };
 
+        // 監聽空白鍵
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
