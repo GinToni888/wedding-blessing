@@ -21,10 +21,10 @@
 <body>
     <div class="card" id="form-container" style="display:none;">
         <h2>送上祝福</h2>
-        <div class="input-group">
-            <label>您的 LINE 暱稱</label>
-            <input type="text" id="name" readonly>
-        </div>
+      <div class="input-group">
+        <label>顯示名稱 (預設為 LINE 暱稱，可修改)</label>
+        <input type="text" id="name" placeholder="請輸入您想顯示的名稱">
+    </div>
         <div class="input-group">
             <label>想對新人說的話</label>
             <textarea id="message" rows="5" placeholder="在此輸入您的祝福..." required></textarea>
@@ -46,7 +46,10 @@
                     liff.login();
                 } else {
                     const profile = await liff.getProfile();
-                    document.getElementById('name').value = profile.displayName;
+                    // 預設填入 LINE 暱稱，但不設為 readonly，讓賓客可以改
+                    const nameInput = document.getElementById('name');
+                    nameInput.value = profile.displayName; 
+                    
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('form-container').style.display = 'block';
                 }
@@ -59,7 +62,7 @@
             const name = document.getElementById('name').value;
             const message = document.getElementById('message').value;
 
-            if (!message) return alert("請輸入祝福語內容");
+            if (!message) return alert("請輸入想對新人說的祝福");
 
             // 顯示傳送中狀態
             const btn = document.querySelector('button');
@@ -73,7 +76,7 @@
                 });
 
                 if (response.ok) {
-                    alert("祝福已收到！謝謝你 " + name);
+                    alert("祝福已順利寄出！謝謝你 " + name);
                     liff.closeWindow(); // 成功後自動關閉視窗
                 } else {
                     throw new Error("API 回應錯誤");
