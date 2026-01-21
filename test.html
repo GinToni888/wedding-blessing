@@ -9,74 +9,36 @@
     <style>
         :root { --cream-bg: #fdfaf5; --sage-green: #7d8c78; --gold: #c5a059; --text-color: #4a4a4a; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        /* 確保 body 寬度完全撐開，不留縫隙 */
-        body, html { 
-            width: 100vw; height: 100vh; 
-            overflow: hidden; 
-            background-color: var(--cream-bg); 
-            font-family: "STFangsong", "NSimSun", serif; 
-        }
+        body, html { width: 100vw; height: 100vh; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        /* 1. 背景層 */
+        /* 背景層 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
-        #bg-blurred { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; 
-            filter: blur(25px); transform: scale(1.1); 
-            transition: opacity 5s ease-in-out; will-change: opacity;
-        }
+        #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; will-change: opacity; }
         .is-clear { opacity: 0; }
 
-        /* 2. 蝴蝶層 */
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.12)); opacity: 0; }
 
-        /* 3. 卡片容器：絕對置中校正 */
-        #display-wrapper { 
-            position: fixed; 
-            top: 0; left: 0; right: 0; bottom: 0; /* 鎖定四邊，確保置中基準點正確 */
-            width: 100vw; height: 100vh; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            z-index: 10; 
-            perspective: 1500px; /* 稍微拉遠透視，視覺更平穩 */
-        }
+        /* 卡片容器 */
+        #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 10; perspective: 1500px; }
         
         .message-card {
-            position: relative; 
-            background: rgba(255, 255, 255, 0.96);
-            border: 1px solid #f0f0f0; 
-            outline: 12px solid rgba(255, 255, 255, 0.5);
+            position: relative; background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
             padding: 75px 90px; 
-            
-            /* --- 強化寬度與置中 --- */
-            width: 850px !important; 
-            min-width: 850px !important; 
-            margin: 0 auto; /* 強制左右 margin 平分 */
-            flex-shrink: 0; 
-            /* ------------------ */
-
-            max-width: 90%; 
-            text-align: center;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.06); 
-            border-radius: 4px;
+            width: 850px !important; min-width: 850px !important; margin: 0 auto; flex-shrink: 0;
+            max-width: 90%; text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.06); border-radius: 4px;
             animation: cardEnter 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-            will-change: transform, opacity;
         }
-        
         .message-card::before { content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px; border: 1px solid rgba(125, 140, 120, 0.15); pointer-events: none; }
         
         .sender { font-size: 26px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
-        .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; font-weight: 500; }
+        /* 內容字體變小 4 號：由 34px 改為 30px */
+        .content { font-size: 30px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; font-weight: 500; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        @keyframes cardEnter { 
-            from { opacity: 0; transform: scale(0.96) translateY(30px); } 
-            to { opacity: 1; transform: scale(1) translateY(0); } 
-        }
-
+        @keyframes cardEnter { from { opacity: 0; transform: scale(0.96) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(0,0,0,0.2); z-index: 1000; }
     </style>
 </head>
@@ -102,7 +64,6 @@
 
         // --- 🦋 蝴蝶系統 ---
         const bfPool = { L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], R: ['bf1_R.gif', 'bf2_R.gif'] };
-
         function spawnButterfly(dir) {
             const container = document.getElementById('butterfly-layer');
             if (container.children.length > 4) return; 
@@ -118,7 +79,6 @@
             gsap.to(img, { x: dir === 'R' ? window.innerWidth + 250 : -250, duration: duration, ease: "none", onComplete: () => { if(img.parentNode) img.remove(); } });
             gsap.to(img, { y: `+=${gsap.utils.random(-80, 80)}`, duration: gsap.utils.random(6, 10), repeat: -1, yoyo: true, ease: "sine.inOut" });
         }
-
         function scheduleButterflies() {
             setTimeout(() => {
                 spawnButterfly(Math.random() > 0.45 ? 'R' : 'L');
@@ -126,13 +86,13 @@
             }, gsap.utils.random(6000, 11000));
         }
 
-        // --- 🔄 核心輪播 ---
+        // --- 🔄 核心輪播 (支援分頁) ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
             container.innerHTML = ''; 
             const data = messages[currentIndex];
-            const text = (data.祝福語 || data.msg || data.content || data.內容 || "Happy Wedding!").toString().replace(/\n/g, '<br>');
-            const name = (data.賓客姓名 || data.name || data.姓名 || "賓客");
+            const text = data.displayMsg.replace(/\n/g, '<br>');
+            const name = data.displayName;
             
             const card = document.createElement('div');
             card.className = 'message-card';
@@ -145,6 +105,35 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
+        // --- 📏 自動分頁邏輯 ---
+        function processRawMessages(rawData) {
+            const MAX_CHARS = 100; // 單頁建議字數上限
+            let processed = [];
+
+            rawData.forEach(item => {
+                const originalText = (item.祝福語 || item.msg || item.內容 || "").toString();
+                const originalName = (item.賓客姓名 || item.name || item.姓名 || "賓客");
+                
+                if (originalText.length > MAX_CHARS) {
+                    // 超過字數，開始拆分
+                    const parts = Math.ceil(originalText.length / MAX_CHARS);
+                    for (let i = 0; i < parts; i++) {
+                        processed.push({
+                            displayName: `${originalName} (${i + 1}/${parts})`,
+                            displayMsg: originalText.substring(i * MAX_CHARS, (i + 1) * MAX_CHARS)
+                        });
+                    }
+                } else {
+                    // 正常字數
+                    processed.push({
+                        displayName: originalName,
+                        displayMsg: originalText
+                    });
+                }
+            });
+            return processed;
+        }
+
         // --- ☁️ 雲端抓取 ---
         async function fetchMessages() {
             try {
@@ -155,8 +144,11 @@
                         Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok')
                     );
                     const finalData = filtered.length > 0 ? filtered : rawData.filter(item => (item.祝福語 || item.msg || item.內容));
+                    
                     if (finalData.length > 0) {
-                        messages = [...localMsgs, ...finalData];
+                        const processedRemote = processRawMessages(finalData);
+                        const processedLocal = processRawMessages(localMsgs);
+                        messages = [...processedLocal, ...processedRemote];
                         document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS`;
                     }
                 }
@@ -166,6 +158,8 @@
         // --- 🚀 立即啟動 ---
         function launch() {
             document.getElementById('bg-blurred').classList.add('is-clear');
+            // 初始化顯示預設卡片
+            messages = processRawMessages(localMsgs);
             rotateMessage();
             setInterval(rotateMessage, 12000);
             scheduleButterflies();
