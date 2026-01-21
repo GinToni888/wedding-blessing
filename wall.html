@@ -4,163 +4,97 @@
     <meta charset="UTF-8">
     <title>Maggie & Stanley Wedding Wall</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root {
-            --cream-bg: #fdfaf5;
-            --sage-green: #7d8c78;
-            --gold: #c5a059;
-            --text-color: #4a4a4a;
-        }
+        :root { --cream-bg: #fdfaf5; --sage-green: #7d8c78; --gold: #c5a059; --text-color: #4a4a4a; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: var(--cream-bg);
-            font-family: "STFangsong", "NSimSun", "仿宋", serif;
-        }
-
-        /* 背景圖層：物理鎖定，不隨動畫位移 */
+        /* 1. 背景層 */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
         }
 
-        /* 內容容器：使用 Flexbox 徹底解決 Safari 置中問題 */
+        /* 2. 開場 Logo 層 (z-index 999) */
+        #opening-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 999; background: transparent; pointer-events: none;
+            transition: opacity 3.5s ease-in-out; /* 3.5秒優雅淡出 */
+        }
+        #main-logo { width: 600px; max-width: 80vw; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.15)); }
+
+        /* 3. 卡片容器 (z-index 10) */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 10; perspective: 1200px;
         }
 
-        /* 經典信紙卡片 (來自 test.html 的視覺基因) */
         .message-card {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.95);
-            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-            border: 1px solid #f0f0f0;
-            outline: 12px solid rgba(255, 255, 255, 0.5);
-            padding: 70px 90px;
-            width: 850px; max-width: 85%;
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
-            border-radius: 4px;
+            position: relative; background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
+            padding: 70px 90px; width: 850px; max-width: 85%; text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.06); border-radius: 4px;
+            /* 修正動畫：確保最終狀態是 scale(1)，解決卡片變小問題 */
+            animation: cardEnter 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-
         .message-card::before {
-            content: ""; position: absolute;
-            top: 15px; left: 15px; right: 15px; bottom: 15px;
+            content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px;
             border: 1px solid rgba(125, 140, 120, 0.15); pointer-events: none;
         }
-
         .sender { font-size: 24px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
         .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 使用 CSS 動畫代替 GSAP，確保環境相容性最高 */
-        .card-enter { animation: zoomIn 1.8s ease-out forwards; }
-        .card-exit { animation: shrinkBack 2.5s ease-in forwards; pointer-events: none; }
-
-        @keyframes zoomIn {
-            from { opacity: 0; transform: scale(0.8) translateZ(-200px); }
-            to { opacity: 1; transform: scale(1) translateZ(0); }
-        }
-        @keyframes shrinkBack {
-            0% { opacity: 1; transform: scale(1) translateZ(0); }
-            100% { opacity: 0; transform: scale(0.3) translateZ(-800px); filter: blur(15px); }
+        @keyframes cardEnter {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 11px; color: rgba(0,0,0,0.3); z-index: 100; }
+        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(0,0,0,0.2); z-index: 1000; }
     </style>
 </head>
 <body>
 
     <div id="master-bg"></div>
-
-    <div id="display-wrapper">
-        <div id="card-container" style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
-            <div class="message-card active-card" id="init-card">
-                <div class="sender">Maggie & Stanley</div>
-                <div class="content">Wedding Blessing Wall<br>祝福同步中...</div>
-                <div class="wedding-tag">Forever Love 2026.04</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="status-bar">CONNECTING...</div>
+    <div id="opening-overlay"><img src="logo.png" id="main-logo" alt="Logo"></div>
+    <div id="display-wrapper"><div id="card-container"></div></div>
+    
+    <div id="status-bar">SYSTEM READY</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
-        let messages = [];
+        
+        let defaultMsg = { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n感謝你們溫暖的祝福。" };
+        let messages = [defaultMsg];
         let currentIndex = 0;
-        let isLooping = false;
 
-        // 1. 強效抓取與容錯處理
-        async function fetchMessages() {
-            try {
-                const res = await fetch(`${gasUrl}?t=${Date.now()}`);
-                const data = await res.json();
-                
-                // 寬鬆過濾：只要有姓名與訊息內容
-                if (data && data.length > 0) {
-                    messages = data.map(item => ({
-                        name: item.name || item.姓名 || "賓客",
-                        msg: item.msg || item.content || item.內容 || "新婚快樂！"
-                    }));
-                    document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length} MESSAGES`;
-                    
-                    if (!isLooping) {
-                        isLooping = true;
-                        rotateMessage();
-                    }
-                }
-            } catch (e) {
-                document.getElementById('status-bar').innerText = "SYNC ERROR: " + e.message;
-            }
-        }
-
-        // 2. 核心輪播邏輯
+        // --- 🔄 輪播系統：強制清理防止 Chrome 層疊 ---
         function rotateMessage() {
-            if (messages.length === 0) return;
             const container = document.getElementById('card-container');
+            
+            // 暴力清理法：在加入新卡片前，直接抹除容器內所有內容
+            container.innerHTML = ''; 
 
-            // 處理退場
-            const oldCard = document.querySelector('.active-card');
-            if (oldCard) {
-                oldCard.classList.remove('active-card');
-                oldCard.classList.add('card-exit');
-                setTimeout(() => { if(oldCard.parentNode) oldCard.parentNode.removeChild(oldCard); }, 2500);
-            }
-
-            // 處理進場
-            const data = messages[currentIndex];
-            const newCard = document.createElement('div');
-            newCard.className = 'message-card active-card card-enter';
-            newCard.innerHTML = `
-                <div class="sender">— ${data.name} —</div>
-                <div class="content">${data.msg.toString().replace(/\n/g, '<br>')}</div>
-                <div class="wedding-tag">Mandarin Oriental Taipei</div>
+            const data = (messages && messages.length > 0) ? messages[currentIndex] : defaultMsg;
+            const text = (data.msg || data.content || data.內容 || "Happy Wedding!").replace(/\n/g, '<br>');
+            
+            const card = document.createElement('div');
+            card.className = 'message-card';
+            card.innerHTML = `
+                <div class="sender">— ${data.name || "賓客"} —</div>
+                <div class="content">${text}</div>
+                <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
             `;
-            container.appendChild(newCard);
-
+            container.appendChild(card);
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // 3. 落櫻特效
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                confetti({
-                    particleCount: 150, spread: 70, origin: { y: 0.7 },
-                    colors: ['#ffc0cb', '#ffb6c1', '#fff0f5', '#fdf5e6'],
-                    shapes: ['circle'], gravity: 0.7, scalar: 1.2, drift: 0.5
-                });
-            }
-        });
-
-        // 啟動
-        fetchMessages();
-        setInterval(fetchMessages, 45000); 
-        setInterval(() => { if(isLooping) rotateMessage(); }, 10000);
-    </script>
-</body>
-</html>
+        // --- ☁️ 非同步資料同步 (不阻塞 UI) ---
+        async function fetchMessages() {
+            try {
+                const res
