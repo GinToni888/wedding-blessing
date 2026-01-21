@@ -18,7 +18,7 @@
             background-size: cover; z-index: 1;
         }
 
-        /* 蝴蝶層 (飛在最前面) */
+        /* 蝴蝶層 (z-index 100) - 調整為精緻小尺寸 */
         #butterfly-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 100; overflow: hidden;
@@ -28,16 +28,16 @@
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0;
         }
 
-        /* 開場 Logo 層 (層級最高) */
+        /* 開場 Logo 層 (z-index 999) */
         #opening-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 999; background: transparent; pointer-events: none;
-            transition: opacity 3s ease-in-out; /* 3秒優雅淡出 */
+            transition: opacity 3s ease-in-out;
         }
         #main-logo { width: 600px; max-width: 80vw; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.15)); }
 
-        /* 卡片容器 */
+        /* 卡片容器 (z-index 10) */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
@@ -49,7 +49,8 @@
             border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
             padding: 70px 90px; width: 850px; max-width: 85%; text-align: center;
             box-shadow: 0 25px 60px rgba(0,0,0,0.06); border-radius: 4px;
-            animation: cardEnter 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            /* 修正動畫：確保最終狀態是 scale(1) */
+            animation: cardEnter 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .message-card::before {
             content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px;
@@ -60,7 +61,7 @@
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
         @keyframes cardEnter {
-            from { opacity: 0; transform: scale(0.9) translateY(30px); }
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
@@ -73,52 +74,50 @@
     <div id="butterfly-layer"></div>
     <div id="opening-overlay"><img src="logo.png" id="main-logo" alt="Logo"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
-    <div id="status-bar">CONNECTING...</div>
+    
+    <div id="status-bar">SYSTEM ACTIVE</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        // 保底資料，絕不卡死
         let defaultMsg = { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n感謝你們溫暖的祝福。" };
         let messages = [defaultMsg];
         let currentIndex = 0;
 
-        // --- 🦋 仿生蝴蝶：極致縮小、優雅、精緻 ---
+        // --- 🦋 精緻蝴蝶系統 (尺寸縮小、頻率降低) ---
         const bfPool = { L: ['bf_L1.gif', 'bf_L2.gif'], R: ['bf_R1.gif', 'bf_R2.gif', 'bf_R3.gif'] };
 
         function spawnButterfly(dir) {
             const container = document.getElementById('butterfly-layer');
-            if (container.children.length > 3) return; // 最多3隻，保持精緻感
+            if (container.children.length > 3) return; // 場上不超過3隻，保持精緻感
 
             const img = document.createElement('img');
-            const pool = dir === 'L' ? bfPool.L : bfPool.R;
+            const pool = dir === 'L' ? bfPool.left || bfPool.L : bfPool.right || bfPool.R;
             img.src = pool[Math.floor(Math.random() * pool.length)];
             img.className = 'butterfly';
             img.onerror = () => img.remove();
 
-            // 尺寸縮小：0.15 (遠) ~ 0.35 (中)
-            const scale = gsap.utils.random(0.15, 0.35); 
+            const scale = gsap.utils.random(0.15, 0.3); // 縮小蝴蝶尺寸
             const startY = gsap.utils.random(15, 80);
-            const duration = gsap.utils.random(25, 40); // 更緩慢的飛行
+            const duration = gsap.utils.random(25, 40);
 
             container.appendChild(img);
             gsap.set(img, { x: dir === 'R' ? -200 : window.innerWidth + 200, y: (window.innerHeight * startY / 100), scale: scale, opacity: 1 });
-            
             gsap.to(img, { x: dir === 'R' ? window.innerWidth + 200 : -200, duration: duration, ease: "none", onComplete: () => img.remove() });
-            gsap.to(img, { y: `+=${gsap.utils.random(-150, 150)}`, duration: gsap.utils.random(6, 10), repeat: -1, yoyo: true, ease: "sine.inOut" });
+            gsap.to(img, { y: `+=${gsap.utils.random(-120, 120)}`, duration: gsap.utils.random(5, 8), repeat: -1, yoyo: true, ease: "sine.inOut" });
         }
 
         function scheduleButterflies() {
             setTimeout(() => {
                 spawnButterfly(Math.random() > 0.4 ? 'R' : 'L');
                 scheduleButterflies();
-            }, gsap.utils.random(8000, 15000)); // 每8-15秒才出一隻
+            }, gsap.utils.random(8000, 15000)); // 8-15秒才出一隻
         }
 
-        // --- 🔄 輪播系統：強制清空、最強容錯 ---
+        // --- 🔄 輪播系統 (暴力清理防疊加) ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            container.innerHTML = ''; // 強制暴力清空，防層疊
+            container.innerHTML = ''; // 強制清空，防止 Chrome 疊加 Bug
 
             const data = (messages && messages.length > 0) ? messages[currentIndex] : defaultMsg;
             const text = (data.msg || data.content || data.內容 || "Happy Wedding!").replace(/\n/g, '<br>');
@@ -134,6 +133,7 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
+        // --- ☁️ 非同步抓取 (絕不阻塞) ---
         async function fetchMessages() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
@@ -142,35 +142,41 @@
                     const filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
                     if (filtered.length > 0) messages = filtered;
                 }
-                document.getElementById('status-bar').innerText = `LIVE: ${messages.length} MESSAGES`;
-            } catch (e) { console.log("Sync delay..."); }
+                document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length} MSGS`;
+            } catch (e) { console.log("Background sync paused..."); }
         }
 
-        // --- 🚀 啟動：不準等待，直接進入 ---
-        function start() {
-            fetchMessages(); // 背景同步，不加 await
+        // --- 🚀 啟動流程 (時間鎖定) ---
+        function launch() {
+            // 背景同步資料，不使用 await，確保 UI 繼續執行
+            fetchMessages(); 
 
             // Logo 呼吸動態
             gsap.to("#main-logo", { scale: 1.05, duration: 4, repeat: -1, yoyo: true, ease: "sine.inOut" });
 
-            // 倒數 sequence
+            // 強制時間序列：不管資料有沒有抓到，Logo 6 秒後一定開始淡出
             setTimeout(() => {
                 const overlay = document.getElementById('opening-overlay');
-                overlay.style.opacity = 0; // 啟動 3s 淡出
+                overlay.style.opacity = 0; 
                 
                 setTimeout(() => {
                     overlay.style.display = 'none';
-                    rotateMessage(); // 啟動卡片
+                    rotateMessage(); // 啟動第一張卡片
                     setInterval(rotateMessage, 12000); 
                     scheduleButterflies(); // 啟動蝴蝶
-                    setInterval(fetchMessages, 45000); 
-                }, 3000); // 配合 CSS transition
-            }, 6000); // Logo 停留時間加長至 6 秒
+                    setInterval(fetchMessages, 45000); // 定時背景同步
+                }, 3000); 
+            }, 6000); 
         }
 
-        window.onload = start;
+        window.onload = launch;
+
+        // 落櫻特效 (空白鍵)
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#fff0f5', '#fdf5e6'] });
+            if (e.code === 'Space') {
+                e.preventDefault();
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#fff0f5', '#fdf5e6'] });
+            }
         });
     </script>
 </body>
