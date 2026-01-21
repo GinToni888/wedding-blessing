@@ -105,7 +105,7 @@
             const container = document.getElementById('butterfly-layer');
             
             // 數量控制：如果場上已經超過 4 隻，暫停生成
-            if (container.children.length > 4) return;
+            if (container.children.length > 5) return;
 
             const img = document.createElement('img');
             const pool = dir === 'L' ? bfPool.L : bfPool.R;
@@ -116,7 +116,7 @@
 
             // 參數調整：更慢、更優雅
             const startY = gsap.utils.random(15, 85);
-            const scale = gsap.utils.random(0.4, 0.9); // 大小差異化
+            const scale = gsap.utils.random(0.1, 0.6); // 大小差異化
             const duration = gsap.utils.random(20, 35); // 超慢速飛行 (20-35秒)
             const wanderY = gsap.utils.random(80, 180); // 更大的飄移幅度
             
