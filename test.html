@@ -11,47 +11,51 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        /* 背景：確保 wedding-bg.png 在最底層 */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
         }
 
-        /* #1 & #2: Logo 開場層 (設為透明背景，不遮擋底圖) */
+        /* 開場 Logo 層 */
         #opening-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            display: grid; place-items: center;
-            z-index: 999;
-            background: transparent; /* 移除遮罩顏色，確保看見背景 */
-            pointer-events: none;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 120vh;
+            display: grid; place-items: center; z-index: 999;
+            background: transparent; pointer-events: none;
         }
-        /* Logo 變大設定 */
-        #main-logo { 
-            width: 600px; /* 從 400px 調大至 600px */
-            max-width: 80vw; 
-            opacity: 1;
-            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.1));
-        }
+        #main-logo { width: 600px; max-width: 85vw; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.1)); }
 
-        /* 蝴蝶層 */
-        #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
-        
-        /* 卡片容器 */
-        #display-wrapper { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: grid; place-items: center; z-index: 10; perspective: 1500px; }
+        /* 卡片容器：物理置中 */
+        #display-wrapper { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 10; perspective: 1500px; }
         
         .message-card {
-            grid-area: 1 / 1; border-radius: 4px; background: rgba(255, 255, 255, 0.95);
+            border-radius: 4px; background: rgba(255, 255, 255, 0.95);
             border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
             padding: 70px 90px; width: 850px; max-width: 85%; text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.05); opacity: 0;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.06); position: relative;
         }
         .message-card::before { content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px; border: 1px solid rgba(125, 140, 120, 0.15); pointer-events: none; }
         
         .sender { font-size: 24px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
         .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; font-weight: 500; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
-        .butterfly { position: absolute; will-change: transform; filter: drop-shadow(0 8px 15px rgba(0,0,0,0.1)); }
+
+        /* 使用原生 CSS 動畫替代 GSAP 卡片控制，解決亂飄與初始化失敗 */
+        .card-enter { animation: cardIn 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .card-exit { animation: cardOut 2.0s ease-in forwards; pointer-events: none; }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: scale(0.85) translateZ(-200px); }
+            to { opacity: 1; transform: scale(1) translateZ(0); }
+        }
+        @keyframes cardOut {
+            from { opacity: 1; transform: scale(1) translateZ(0); }
+            to { opacity: 0; transform: scale(0.5) translateZ(-600px); filter: blur(10px); }
+        }
+
+        #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
+        .butterfly { position: absolute; will-change: transform; }
+        
         #status-bar { position: fixed; bottom: 10px; left: 15px; font-size: 10px; color: rgba(0,0,0,0.2); z-index: 1000; }
     </style>
 </head>
@@ -60,42 +64,44 @@
     <div id="master-bg"></div>
 
     <div id="opening-overlay">
-        <img src="logo.png" id="main-logo" alt="Maggie & Stanley">
+        <img src="logo.png" id="main-logo" alt="Logo">
     </div>
 
     <div id="butterfly-layer"></div>
-    <div id="display-wrapper"><div id="card-container" style="display: grid; place-items: center;"></div></div>
+    <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="status-bar">SYSTEM READY</div>
+    <div id="status-bar">READY</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        // 預設卡片清單 (保證開場後有東西播)
-        let messages = [{ name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n在此留下您的祝福。", status: "ok" }];
+        // 確保初始資料不為空
+        let defaultMsg = { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n感謝你們溫暖的祝福。", status: "ok" };
+        let messages = [defaultMsg];
         let currentIndex = 0;
 
-        // 蝴蝶資源 (請確保檔名正確)
+        // 蝴蝶資源
         const bfPool = { left: ['bf_L1.gif', 'bf_L2.gif'], right: ['bf_R1.gif', 'bf_R2.gif', 'bf_R3.gif'] };
 
         function spawnButterfly(dir) {
+            if (!window.gsap) return; // 容錯
             const container = document.getElementById('butterfly-layer');
             const img = document.createElement('img');
             const pool = dir === 'L' ? bfPool.left : bfPool.right;
             img.src = pool[Math.floor(Math.random() * pool.length)];
             img.className = 'butterfly';
             container.appendChild(img);
+            
             const startY = (Math.random() * 80 + 10) + "vh";
-            const scale = (Math.random() * 0.4 + 0.4);
-            const duration = (Math.random() * 8 + 12);
+            const scale = (Math.random() * 0.3 + 0.4);
+            
             if (dir === 'R') {
-                gsap.set(img, { x: -200, y: startY, scale: scale, opacity: 0 });
-                gsap.to(img, { x: window.innerWidth + 200, opacity: 1, duration: duration, ease: "none", onComplete: () => img.remove() });
+                gsap.set(img, { x: -250, y: startY, scale: scale, opacity: 0 });
+                gsap.to(img, { x: window.innerWidth + 250, opacity: 1, duration: 15, ease: "none", onComplete: () => img.remove() });
             } else {
-                gsap.set(img, { x: window.innerWidth + 200, y: startY, scale: scale, opacity: 0 });
-                gsap.to(img, { x: -200, opacity: 1, duration: duration, ease: "none", onComplete: () => img.remove() });
+                gsap.set(img, { x: window.innerWidth + 250, y: startY, scale: scale, opacity: 0 });
+                gsap.to(img, { x: -250, opacity: 1, duration: 15, ease: "none", onComplete: () => img.remove() });
             }
-            gsap.to(img, { y: "+=60", duration: 3, repeat: -1, yoyo: true, ease: "sine.inOut" });
         }
 
         function launchWave() {
@@ -103,61 +109,84 @@
             for(let i=0; i<3; i++) setTimeout(() => spawnButterfly('R'), Math.random() * 5000);
         }
 
+        // 核心輪播：不依賴 GSAP
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            container.innerHTML = ''; 
+            
+            // 退場邏輯
+            const oldCard = container.querySelector('.message-card');
+            if (oldCard) {
+                oldCard.className = 'message-card card-exit';
+                setTimeout(() => oldCard.remove(), 2100);
+            }
+
+            // 進場邏輯
+            if (messages.length === 0) messages = [defaultMsg];
             const data = messages[currentIndex];
-            const card = document.createElement('div');
-            card.className = 'message-card';
-            card.innerHTML = `
+            const newCard = document.createElement('div');
+            newCard.className = 'message-card card-enter';
+            
+            const textContent = (data.msg || data.content || data.內容 || "新婚快樂！").replace(/\n/g, '<br>');
+            newCard.innerHTML = `
                 <div class="sender">— ${data.name || "賓客"} —</div>
-                <div class="content">${(data.msg || data.content || "新婚快樂").replace(/\n/g, '<br>')}</div>
+                <div class="content">${textContent}</div>
                 <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
             `;
-            container.appendChild(card);
-            const tl = gsap.timeline();
-            tl.fromTo(card, { opacity: 0, scale: 0.85, z: -200 }, { opacity: 1, scale: 1, z: 0, duration: 1.8, ease: "power2.out" })
-              .to(card, { opacity: 0, scale: 0.5, z: -600, delay: 8, duration: 1.5, ease: "power2.in" });
+            container.appendChild(newCard);
+            
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
         async function updateData() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
-                const data = await res.json();
-                if (data && data.length > 0) {
-                    messages = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
-                    document.getElementById('status-bar').innerText = `已同步雲端: ${messages.length} 則祝福`;
+                const rawData = await res.json();
+                
+                // 更強壯的解析邏輯：確保它一定是陣列
+                const data = Array.isArray(rawData) ? rawData : [];
+
+                if (data.length > 0) {
+                    const filtered = data.filter(item => {
+                        return Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok');
+                    });
+                    if (filtered.length > 0) {
+                        messages = filtered;
+                        document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length}`;
+                    }
                 }
-            } catch (e) { console.log("Sync delay..."); }
+            } catch (e) {
+                document.getElementById('status-bar').innerText = "SYNC ERROR - CHECKING...";
+            }
         }
 
-        // --- 核心啟動邏輯 ---
-        function startSystem() {
-            // 背景同步資料，但不阻塞後續動畫
-            updateData(); 
+        function init() {
+            updateData(); // 背景更新
             
-            // Logo 微微放大動態 (增加氣勢)
-            gsap.to("#main-logo", { scale: 1.1, duration: 3, ease: "power1.inOut" });
-
-            // Logo 淡化 sequence
-            gsap.to("#opening-overlay", { 
-                opacity: 0, 
-                duration: 2.5, 
-                delay: 3, // 讓 Logo 顯示 3 秒展現氣勢
-                onComplete: () => {
+            // Logo 動畫 (保留 GSAP 做非關鍵路徑)
+            if (window.gsap) {
+                gsap.to("#main-logo", { scale: 1.1, duration: 4, ease: "power1.inOut" });
+                gsap.to("#opening-overlay", { 
+                    opacity: 0, duration: 2, delay: 3, 
+                    onComplete: () => {
+                        document.getElementById("opening-overlay").style.display = 'none';
+                        rotateMessage();
+                        setInterval(rotateMessage, 11000); 
+                        launchWave();
+                        setInterval(launchWave, 20000);
+                        setInterval(updateData, 45000);
+                    } 
+                });
+            } else {
+                // 如果 GSAP 沒載入，3秒後直接啟動
+                setTimeout(() => {
                     document.getElementById("opening-overlay").style.display = 'none';
-                    // 正式開始
                     rotateMessage();
-                    setInterval(rotateMessage, 10000); 
-                    launchWave();
-                    setInterval(launchWave, 18000);
-                    setInterval(updateData, 45000);
-                } 
-            });
+                    setInterval(rotateMessage, 11000);
+                }, 3000);
+            }
         }
 
-        window.onload = startSystem;
+        window.onload = init;
 
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
