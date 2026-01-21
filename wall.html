@@ -8,198 +8,161 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --cream-bg: #fdfaf5; --sage-green: #7d8c78; --gold: #c5a059; --text-color: #4a4a4a; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        /* 1. 背景圖層 */
-        #master-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('wedding-bg.png') no-repeat center center;
-            background-size: cover; z-index: 1;
+        /* 1. 背景層 */
+        #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
+        #bg-blurred { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; 
+            filter: blur(25px); transform: scale(1.1); 
+            transition: opacity 5s ease-in-out; will-change: opacity;
         }
+        .is-clear { opacity: 0; }
 
-        /* 2. 環境生物圖層 (蝴蝶與鳥) - 介於背景與卡片之間 */
-        #ambient-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5; pointer-events: none; overflow: hidden;
+        /* 2. 蝴蝶層 */
+        #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
+        .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.12)); opacity: 0; }
+
+        /* 3. 卡片容器：強制不壓縮佈局 */
+        #display-wrapper { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            display: flex; align-items: center; justify-content: center; 
+            z-index: 10; perspective: 1200px; 
         }
-        .creature { position: absolute; opacity: 0; will-change: transform; }
-
-        /* 3. 主容器 (卡片) */
-        #display-wrapper {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 10; perspective: 1200px;
-        }
-
-        /* 4. 經典信紙卡片 */
+        
         .message-card {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.95);
-            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-            border: 1px solid #f0f0f0;
+            position: relative; 
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #f0f0f0; 
             outline: 12px solid rgba(255, 255, 255, 0.5);
-            padding: 70px 90px;
-            width: 850px; max-width: 85%;
+            padding: 75px 90px; 
+            
+            /* --- 強制寬度設定 --- */
+            width: 850px !important; 
+            min-width: 850px !important; /* 防止被壓縮 */
+            flex-shrink: 0; /* 告知 Flexbox 不要縮小我 */
+            /* ------------------ */
+
+            max-width: 90%; 
             text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
-            border-radius: 4px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.06); border-radius: 4px;
+            animation: cardEnter 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-        .message-card::before {
-            content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px;
-            border: 1px solid rgba(125, 140, 120, 0.15); pointer-events: none;
-        }
-        .sender { font-size: 24px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
-        .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
+        .message-card::before { content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px; border: 1px solid rgba(125, 140, 120, 0.15); pointer-events: none; }
+        
+        .sender { font-size: 26px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
+        .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; font-weight: 500; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* CSS 卡片動畫 */
-        .card-enter { animation: zoomIn 1.8s ease-out forwards; }
-        .card-exit { animation: shrinkBack 2.5s ease-in forwards; pointer-events: none; }
-        @keyframes zoomIn { from { opacity: 0; transform: scale(0.8) translateZ(-200px); } to { opacity: 1; transform: scale(1) translateZ(0); } }
-        @keyframes shrinkBack { 0% { opacity: 1; transform: scale(1) translateZ(0); } 100% { opacity: 0; transform: scale(0.3) translateZ(-800px); filter: blur(15px); } }
+        @keyframes cardEnter { 
+            from { opacity: 0; transform: scale(0.96) translateY(20px); } 
+            to { opacity: 1; transform: scale(1) translateY(0); } 
+        }
 
-        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 11px; color: rgba(0,0,0,0.3); z-index: 100; }
+        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(0,0,0,0.2); z-index: 1000; }
     </style>
 </head>
 <body>
 
-    <div id="master-bg"></div>
-    <div id="ambient-layer"></div>
-
-    <div id="display-wrapper">
-        <div id="card-container" style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
-            <div class="message-card active-card" id="init-card">
-                <div class="sender">Maggie & Stanley</div>
-                <div class="content">Wedding Blessing Wall<br>祝福同步中...</div>
-                <div class="wedding-tag">Forever Love 2026.04</div>
-            </div>
-        </div>
-    </div>
-
+    <div id="bg-sharp"></div>
+    <div id="bg-blurred"></div>
+    <div id="butterfly-layer"></div>
+    <div id="display-wrapper"><div id="card-container"></div></div>
+    
     <div id="status-bar">CONNECTING...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
-        let messages = [];
+        
+        let localMsgs = [
+            { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
+            { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福\n We are deeply touched by your warm blessings." },
+            { name: "Maggie & Stanley", msg: "祝大家玩得開心\n Have fun 🥂 " }
+        ];
+        let messages = [...localMsgs];
         let currentIndex = 0;
-        let isLooping = false;
 
-        // --- A. 環境生物動畫系統 (蝴蝶與鳥) ---
-        const creatures = {
-            // 請確保您上傳了這些 GIF 檔案，或者替換成您自己的檔名
-            butterflies: ['bf1_L.gif', 'bf2_L.gif', 'bf_L.gif', 'bf1_R.gif', 'bf2_R.gif'],
-            birds: ['bird1.gif']
-        };
+        // --- 🦋 蝴蝶系統 ---
+        const bfPool = { L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], R: ['bf1_R.gif', 'bf2_R.gif'] };
 
-        function spawnCreature(type) {
-            const container = document.getElementById('ambient-layer');
-            const el = document.createElement('img');
-            const list = creatures[type];
-            // 隨機選擇一張圖片
-            el.src = list[Math.floor(Math.random() * list.length)];
-            el.className = 'creature';
-            container.appendChild(el);
-
-            // 隨機參數設定
-            const startSide = Math.random() > 0.5 ? 'left' : 'right';
-            const startY = Math.random() * window.innerHeight;
-            // 蝴蝶較小且慢，鳥較大且快
-            const scale = type === 'butterflies' ? gsap.utils.random(0.4, 0.7) : gsap.utils.random(0.8, 1.2);
-            const duration = type === 'butterflies' ? gsap.utils.random(15, 25) : gsap.utils.random(8, 12);
-            
-            // 初始位置設定 (在螢幕外)
-            gsap.set(el, {
-                x: startSide === 'left' ? -150 : window.innerWidth + 150,
-                y: startY,
-                scale: scale,
-                opacity: 0,
-                // 如果從右邊飛入，將圖片水平翻轉
-                scaleX: startSide === 'right' ? -1 : 1 
-            });
-
-            // 飛行路徑動畫
-            gsap.to(el, {
-                x: startSide === 'left' ? window.innerWidth + 150 : -150,
-                y: startY + gsap.utils.random(-200, 200), // 飛行中稍微上下浮動
-                opacity: 1, // 飛行過程中淡入
-                duration: duration,
-                ease: "none", // 等速飛行
-                onComplete: () => el.remove() // 飛出螢幕後移除元素
-            });
-
-            // 蝴蝶額外的飄忽感 (Y軸隨機擺動)
-            if (type === 'butterflies') {
-                gsap.to(el, {
-                    y: `+=${gsap.utils.random(-100, 100)}`,
-                    duration: gsap.utils.random(2, 4),
-                    repeat: -1,
-                    yoyo: true,
-                    ease: "sine.inOut"
-                });
-            }
+        function spawnButterfly(dir) {
+            const container = document.getElementById('butterfly-layer');
+            if (container.children.length > 4) return; 
+            const img = document.createElement('img');
+            img.src = bfPool[dir][Math.floor(Math.random() * bfPool[dir].length)];
+            img.className = 'butterfly';
+            img.onerror = () => img.remove();
+            const startY = gsap.utils.random(15, 55); 
+            const scale = gsap.utils.random(0.18, 0.4); 
+            const duration = gsap.utils.random(22, 35); 
+            container.appendChild(img);
+            gsap.set(img, { x: dir === 'R' ? -250 : window.innerWidth + 250, y: (window.innerHeight * startY / 100), scale: scale, opacity: 1 });
+            gsap.to(img, { x: dir === 'R' ? window.innerWidth + 250 : -250, duration: duration, ease: "none", onComplete: () => { if(img.parentNode) img.remove(); } });
+            gsap.to(img, { y: `+=${gsap.utils.random(-80, 80)}`, duration: gsap.utils.random(6, 10), repeat: -1, yoyo: true, ease: "sine.inOut" });
         }
 
-
-        // --- B. 資料抓取 ---
-        async function fetchMessages() {
-            try {
-                const res = await fetch(`${gasUrl}?t=${Date.now()}`);
-                const data = await res.json();
-                if (data && data.length > 0) {
-                    messages = data.map(item => ({
-                        name: item.name || item.姓名 || "賓客",
-                        msg: item.msg || item.content || item.內容 || "新婚快樂！"
-                    }));
-                    document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length} MESSAGES`;
-                    if (!isLooping) { isLooping = true; rotateMessage(); }
-                }
-            } catch (e) { document.getElementById('status-bar').innerText = "SYNC ERROR: " + e.message; }
+        function scheduleButterflies() {
+            setTimeout(() => {
+                spawnButterfly(Math.random() > 0.45 ? 'R' : 'L');
+                scheduleButterflies();
+            }, gsap.utils.random(6000, 11000));
         }
 
-        // --- C. 卡片輪播 ---
+        // --- 🔄 核心輪播 ---
         function rotateMessage() {
-            if (messages.length === 0) return;
             const container = document.getElementById('card-container');
-            const oldCard = document.querySelector('.active-card');
-            if (oldCard) {
-                oldCard.classList.remove('active-card');
-                oldCard.classList.add('card-exit');
-                setTimeout(() => { if(oldCard.parentNode) oldCard.parentNode.removeChild(oldCard); }, 2500);
-            }
+            container.innerHTML = ''; 
             const data = messages[currentIndex];
-            const newCard = document.createElement('div');
-            newCard.className = 'message-card active-card card-enter';
-            newCard.innerHTML = `
-                <div class="sender">— ${data.name} —</div>
-                <div class="content">${data.msg.toString().replace(/\n/g, '<br>')}</div>
-                <div class="wedding-tag">Mandarin Oriental Taipei</div>
+            const text = (data.祝福語 || data.msg || data.content || data.內容 || "Happy Wedding!").toString().replace(/\n/g, '<br>');
+            const name = (data.賓客姓名 || data.name || data.姓名 || "賓客");
+            
+            const card = document.createElement('div');
+            card.className = 'message-card';
+            card.innerHTML = `
+                <div class="sender">— ${name} —</div>
+                <div class="content">${text}</div>
+                <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
             `;
-            container.appendChild(newCard);
+            container.appendChild(card);
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // --- D. 落櫻特效 ---
+        // --- ☁️ 雲端抓取邏輯 ---
+        async function fetchMessages() {
+            try {
+                const res = await fetch(`${gasUrl}?t=${Date.now()}`);
+                const rawData = await res.json();
+                if (Array.isArray(rawData) && rawData.length > 0) {
+                    let filtered = rawData.filter(item => 
+                        Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok')
+                    );
+                    const finalData = filtered.length > 0 ? filtered : rawData.filter(item => (item.祝福語 || item.msg || item.內容));
+                    
+                    if (finalData.length > 0) {
+                        // 修正：保留全部預設卡片，並把雲端資料接在後面
+                        messages = [...localMsgs, ...finalData];
+                        document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS`;
+                    }
+                }
+            } catch (e) { document.getElementById('status-bar').innerText = "SYNC PENDING..."; }
+        }
+
+        // --- 🚀 立即啟動 ---
+        function launch() {
+            document.getElementById('bg-blurred').classList.add('is-clear');
+            rotateMessage();
+            setInterval(rotateMessage, 12000);
+            scheduleButterflies();
+            fetchMessages(); 
+            setInterval(fetchMessages, 45000);
+        }
+
+        window.onload = launch;
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                confetti({
-                    particleCount: 150, spread: 70, origin: { y: 0.7 },
-                    colors: ['#ffc0cb', '#ffb6c1', '#fff0f5', '#fdf5e6'],
-                    shapes: ['circle'], gravity: 0.7, scalar: 1.2, drift: 0.5
-                });
-            }
+            if (e.code === 'Space') confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#fff0f5', '#fdf5e6'] });
         });
-
-        // --- 啟動 ---
-        fetchMessages();
-        setInterval(fetchMessages, 45000);
-        setInterval(() => { if(isLooping) rotateMessage(); }, 10000);
-
-        // 啟動環境生物生成器
-        // 蝴蝶：每 4 秒嘗試生成一隻
-        setInterval(() => spawnCreature('butterflies'), 4000);
-        // 鳥：每 12 秒嘗試生成一隻
-        setInterval(() => spawnCreature('birds'), 12000);
-
     </script>
 </body>
 </html>
