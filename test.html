@@ -11,44 +11,37 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        /* 1. 背景層 */
+        /* 1. 背景層 (z-index: 1) */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
         }
 
-        /* 2. Loading 遮罩層 (z-index 999) */
-        #loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(253, 250, 245, 0.7);
-            backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 999;
-            transition: opacity 3s ease-in-out;
-        }
-        #loading-logo {
-            width: 600px; max-width: 80vw;
-            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.15));
-            animation: logoPulse 4s ease-in-out infinite;
-        }
-        @keyframes logoPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        /* 3. 蝴蝶層 (z-index 5) */
+        /* 2. 蝴蝶層 (z-index: 100) - 在最前方飛過卡片 */
         #butterfly-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5; pointer-events: none; overflow: hidden;
+            pointer-events: none; z-index: 100; overflow: hidden;
         }
-        .butterfly { position: absolute; opacity: 0; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); }
+        .butterfly { 
+            position: absolute; will-change: transform; 
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0;
+        }
 
-        /* 4. 卡片主容器 (z-index 10) */
+        /* 3. 開場 Logo 層 (z-index: 999) */
+        #opening-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 999; background: transparent; pointer-events: none;
+            transition: opacity 3.5s ease-in-out;
+        }
+        #main-logo { width: 600px; max-width: 80vw; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.15)); }
+
+        /* 4. 卡片容器 (z-index: 10) */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
-            z-index: 10; perspective: 1200px;
+            z-index: 10; perspective: 1500px;
         }
 
         .message-card {
@@ -56,8 +49,7 @@
             border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
             padding: 70px 90px; width: 850px; max-width: 85%; text-align: center;
             box-shadow: 0 25px 60px rgba(0,0,0,0.06); border-radius: 4px;
-            /* 修正動畫：確保最終狀態是 scale(1) */
-            animation: cardEnter 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation: cardEnter 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .message-card::before {
             content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px;
@@ -68,7 +60,7 @@
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
         @keyframes cardEnter {
-            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            from { opacity: 0; transform: scale(0.95) translateY(30px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
@@ -79,10 +71,10 @@
 
     <div id="master-bg"></div>
     <div id="butterfly-layer"></div>
-    <div id="loading-overlay"><img src="logo.png" id="loading-logo" alt="Maggie & Stanley Logo"></div>
+    <div id="opening-overlay"><img src="logo.png" id="main-logo" alt="Logo"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="status-bar">SYSTEM INITIALIZING...</div>
+    <div id="status-bar">CONNECTING...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
@@ -91,56 +83,52 @@
         let messages = [defaultMsg];
         let currentIndex = 0;
 
-        // --- 🦋 蝴蝶方向邏輯 ---
+        // --- 🦋 蝴蝶系統：方向鎖定、精緻比例 ---
         const bfPool = {
-            L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], // 頭朝左 (從右向左飛)
-            R: ['bf1_R.gif', 'bf2_R.gif']              // 頭朝右 (從左向右飛)
+            L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], // 頭朝左 (從右飛向左)
+            R: ['bf1_R.gif', 'bf2_R.gif']              // 頭朝右 (從左飛向右)
         };
 
-        function spawnButterfly() {
+        function spawnButterfly(dir) {
             const container = document.getElementById('butterfly-layer');
+            if (container.children.length > 3) return; 
+
             const img = document.createElement('img');
-            
-            const side = Math.random() > 0.5 ? 'left' : 'right';
-            const pool = side === 'left' ? bfPool.R : bfPool.L;
-            
+            const pool = dir === 'L' ? bfPool.L : bfPool.R;
             img.src = pool[Math.floor(Math.random() * pool.length)];
             img.className = 'butterfly';
             img.onerror = () => img.remove();
+
+            // 比例縮小：0.15 ~ 0.35
+            const scale = gsap.utils.random(0.15, 0.35); 
+            const startY = gsap.utils.random(15, 80);
+            const duration = gsap.utils.random(25, 40);
+
             container.appendChild(img);
-
-            const scale = gsap.utils.random(0.3, 0.5);
-            const startY = gsap.utils.random(15, 85);
-            const duration = gsap.utils.random(20, 35);
-
-            gsap.set(img, {
-                x: side === 'left' ? -200 : window.innerWidth + 200,
-                y: (window.innerHeight * startY / 100),
-                scale: scale,
-                opacity: 0
+            gsap.set(img, { 
+                x: dir === 'R' ? -250 : window.innerWidth + 250, 
+                y: (window.innerHeight * startY / 100), 
+                scale: scale, 
+                opacity: 1 
             });
-
-            gsap.to(img, {
-                x: side === 'left' ? window.innerWidth + 200 : -200,
-                opacity: 1,
-                duration: duration,
-                ease: "none",
-                onComplete: () => img.remove()
-            });
-
-            gsap.to(img, {
-                y: `+=${gsap.utils.random(-100, 100)}`,
-                duration: gsap.utils.random(4, 8),
-                repeat: -1,
-                yoyo: true,
-                ease: "sine.inOut"
-            });
+            
+            gsap.to(img, { x: dir === 'R' ? window.innerWidth + 250 : -250, duration: duration, ease: "none", onComplete: () => img.remove() });
+            gsap.to(img, { y: `+=${gsap.utils.random(-150, 150)}`, duration: gsap.utils.random(6, 10), repeat: -1, yoyo: true, ease: "sine.inOut" });
         }
 
-        // --- 🔄 輪播系統 ---
+        function scheduleButterflies() {
+            setTimeout(() => {
+                // 保持 2左 3右 的隨機機率傾向
+                const dir = Math.random() > 0.4 ? 'R' : 'L';
+                spawnButterfly(dir);
+                scheduleButterflies();
+            }, gsap.utils.random(8000, 15000));
+        }
+
+        // --- 🔄 輪播系統：強制清空防疊加 ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            container.innerHTML = ''; // 強力清空防層疊
+            container.innerHTML = ''; 
 
             const data = (messages && messages.length > 0) ? messages[currentIndex] : defaultMsg;
             const text = (data.msg || data.content || data.內容 || "Happy Wedding!").replace(/\n/g, '<br>');
@@ -156,8 +144,10 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // --- ☁️ 非同步資料同步 (不阻塞 UI) ---
+        // --- ☁️ 雲端抓取：不影響 UI 動畫 ---
         async function fetchMessages() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    const filtered = data.filter(item => Object.values(item).some(v
