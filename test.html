@@ -39,11 +39,10 @@
         .content { font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; font-weight: 500; word-wrap: break-word; white-space: pre-wrap; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 3. 🌸 儀式花牆：去背修正 */
+        /* 3. 🌸 儀式花牆 */
         #ceremony-overlay {
             position: fixed; top: -110%; left: 0; width: 100vw; height: 100vh;
             z-index: 2000;
-            /* 移除背景顏色，確保 100% 透明 */
             background: transparent url('flower-wall.png') no-repeat center center;
             background-size: cover;
             will-change: transform;
@@ -68,13 +67,14 @@
         
         const localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
-            { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福 祝大家玩得開心\n We are deeply touched by your warm blessings.\n Have fun 🥂" },
+            { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福\n We are deeply touched by your warm blessings." },
+            { name: "Maggie & Stanley", msg: "祝大家玩得開心\n Have fun 🥂 " }
         ];
         
         let messages = []; 
         let currentIndex = 0;
         let isCeremonyActive = false;
-        let initialLocalPhase = true; // 新增開場階段標記
+        let initialLocalPhase = true; 
 
         // --- 🦋 蝴蝶系統 ---
         const bfPool = { L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], R: ['bf1_R.gif', 'bf2_R.gif'] };
@@ -105,40 +105,58 @@
             gsap.timeline({ onComplete: () => img.remove() }).to(img, { opacity: 1, duration: 2 }).to(img, { x: (dir === 'toRight' ? window.innerWidth + 300 : -300), duration: 22, ease: "none" });
         }
 
-        // --- 🌸 儀式花牆 (200 朵) ---
+        // --- 🌸 儀式花牆 (250 朵修正版) ---
         let placedFlowers = [];
         function initCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
             const files = ['flower1.gif', 'flower2.gif', 'flower3.gif'];
-            const zones = [{c:120,y1:2,y2:33},{c:70,y1:34,y2:65},{c:10,y1:66,y2:92}];
+            // 總數 250 朵：150 (60%), 88 (35%), 12 (5%)
+            const zones = [{c:150,y1:2,y2:33},{c:88,y1:34,y2:65},{c:12,y1:66,y2:92}];
+            
             zones.forEach(z => {
                 for (let i = 0; i < z.c; i++) {
                     const ch = Math.random();
+                    // Flower 1 (70%): 110px | Flower 2/3 (30%): 60px
                     let s = ch < 0.7 ? 110 : 60, f = ch < 0.7 ? files[0] : (ch < 0.85 ? files[1] : files[2]);
                     let x, y, found = false;
-                    for (let att = 0; att < 120; att++) {
+                    
+                    // 增加嘗試次數以應對高密度
+                    for (let att = 0; att < 150; att++) {
                         x = gsap.utils.random(3, 94); y = gsap.utils.random(z.y1, z.y2);
                         const pxX = (window.innerWidth * x) / 100, pxY = (window.innerHeight * y) / 100;
+                        
+                        // 碰撞偵測緩衝設為 5px
                         const ov = placedFlowers.some(fl => Math.sqrt(Math.pow(pxX-fl.x,2)+Math.pow(pxY-fl.y,2)) < (s/2+fl.s/2+5));
+                        
                         if (!ov) {
                             placedFlowers.push({x:pxX, y:pxY, s:s});
                             const fEl = document.createElement('div');
                             fEl.className = 'flower-item';
                             fEl.style.cssText = `left:${x}%;top:${y}%;width:${s}px;height:${s}px;background-image:url('${f}');`;
-                            if (ch < 0.7) fEl.style.filter = 'brightness(1.05)'; else fEl.style.filter = 'opacity(0.8)';
+                            
+                            // 視覺濾鏡
+                            if (ch < 0.7) fEl.style.filter = 'brightness(1.05)'; 
+                            else fEl.style.filter = 'opacity(0.8)';
+                            
                             overlay.appendChild(fEl);
                             found = true; break;
                         }
                     }
                 }
             });
+            console.log(`Initialized ${placedFlowers.length} flowers (250 Target).`);
         }
+
         function toggleCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
             const flowers = document.querySelectorAll('.flower-item');
             if (!isCeremonyActive) {
                 gsap.to(overlay, { top: 0, duration: 1.8, ease: "power4.inOut" });
-                gsap.to(flowers, { scale: 1, duration: 1, delay: 1.2, stagger: { amount: 2.5, from: "random" }, ease: "back.out(1.5)" });
+                gsap.to(flowers, { 
+                    scale: 1, duration: 1, delay: 1.2, 
+                    stagger: { amount: 3, from: "random" }, 
+                    ease: "back.out(1.5)" 
+                });
                 isCeremonyActive = true;
             } else {
                 gsap.to(flowers, { scale: 0, duration: 0.6 });
@@ -155,12 +173,11 @@
             
             container.innerHTML = `<div class="message-card"><div class="sender">— ${data.displayName || data.name} —</div><div class="content">${(data.displayMsg || data.msg).replace(/\n/g, '<br>')}</div><div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div></div>`;
             
-            // 判斷是否切換階段
             if (initialLocalPhase && currentIndex === localMsgs.length - 1) {
-                initialLocalPhase = false; // 播完兩張預設後，切換到混合名單
+                initialLocalPhase = false;
                 currentIndex = 0;
             } else {
-                currentIndex = (currentIndex + 1) % (initialLocalPhase ? localMsgs.length : messages.length);
+                currentIndex = (currentIndex + 1) % (initialLocalPhase ? localMsgs.length : (messages.length || 1));
             }
         }
 
@@ -180,7 +197,7 @@
                 mixed.push(pr[i]);
                 if ((i + 1) % 15 === 0) { mixed.push(lc[lC % lc.length]); lC++; }
             }
-            if (pr.length % 15 !== 0) mixed.push(lc[lC % lc.length]);
+            if (pr.length > 0 && pr.length % 15 !== 0) mixed.push(lc[lC % lc.length]);
             return mixed;
         }
 
@@ -198,7 +215,7 @@
         window.onload = () => {
             document.getElementById('bg-blurred').classList.add('is-clear');
             initCeremony(); 
-            rotateMessage(); // 立即播第 1 張預設
+            rotateMessage(); 
             setInterval(rotateMessage, 12000);
             setInterval(spawnButterfly, 14000);
             fetchMessages(); 
