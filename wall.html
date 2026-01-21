@@ -19,7 +19,7 @@
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* 1050px 大氣佈局 */
+        /* 1050px 大氣卡片佈局 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 10; perspective: 1800px; }
         .message-card {
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
@@ -44,7 +44,7 @@
     <div id="butterfly-layer"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="status-bar">SYSTEM ACTIVE - MINIMALIST MODE</div>
+    <div id="status-bar">SYSTEM ACTIVE - 15+1 MODE</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
@@ -55,23 +55,12 @@
             { name: "Maggie & Stanley", msg: "祝大家玩得開心\n Have fun 🥂 " }
         ];
         
-        let messages = []; 
+        let messages = []; // 最終混合後的清單
         let currentIndex = 0;
 
-        const bfPool = { 
-            L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], 
-            R: ['bf1_R.gif', 'bf2_R.gif'] 
-        };
+        const bfPool = { L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], R: ['bf1_R.gif', 'bf2_R.gif'] };
 
-        let decks = { L: [], R: [] };
-
-        function getNextButterfly(type) {
-            if (decks[type].length === 0) {
-                decks[type] = [...bfPool[type]].sort(() => Math.random() - 0.5);
-            }
-            return decks[type].pop();
-        }
-
+        // --- 🦋 區域權重隨機高度 ---
         function getRandomZoneY() {
             const dice = Math.random() * 100;
             let targetZone;
@@ -84,81 +73,71 @@
             return (window.innerHeight * randomPercent) / 100;
         }
 
+        // --- 🦋 仿生折返系統 ---
         function spawnButterfly() {
             const container = document.getElementById('butterfly-layer');
-            // 降低畫面上的蝴蝶密度，上限改為 3 隻
-            if (container.children.length >= 3) return; 
+            if (container.children.length > 5) return; 
 
             const img = document.createElement('img');
-            const direction = Math.random() > 0.5 ? 'toLeft' : 'toRight';
-            const poolType = direction === 'toLeft' ? 'L' : 'R';
-            
-            img.src = getNextButterfly(poolType);
+            const isLType = Math.random() > 0.5;
+            const pool = isLType ? bfPool.L : bfPool.R;
+            img.src = pool[Math.floor(Math.random() * pool.length)];
             img.className = 'butterfly';
             
-            const baseScale = gsap.utils.random(0.18, 0.35);
-            const startX = (direction === 'toLeft') ? window.innerWidth + 200 : -200;
+            const baseScale = gsap.utils.random(0.18, 0.38);
+            const startX = isLType ? window.innerWidth + 200 : -200;
             const startY = getRandomZoneY();
 
             container.appendChild(img);
-            
-            let initialScaleX = baseScale;
-            if (poolType === 'L' && direction === 'toRight') initialScaleX = -baseScale;
-            if (poolType === 'R' && direction === 'toLeft') initialScaleX = -baseScale;
-
-            gsap.set(img, { x: startX, y: startY, scale: baseScale, scaleX: initialScaleX, opacity: 0 });
+            gsap.set(img, { x: startX, y: startY, scale: baseScale, opacity: 0 });
 
             const tl = gsap.timeline({ onComplete: () => { if(img.parentNode) img.remove(); } });
-            tl.to(img, { opacity: 1, duration: 2 }); // 淡入時間稍微拉長
+            tl.to(img, { opacity: 1, duration: 1.5 });
 
-            const uTurns = gsap.utils.random(1, 2, 1); // 減少折返次數，更顯安靜
+            const uTurns = gsap.utils.random(2, 3, 1);
             let lastX = startX;
 
             for (let i = 0; i < uTurns; i++) {
-                const targetX = gsap.utils.random(window.innerWidth * 0.2, window.innerWidth * 0.8);
+                const targetX = gsap.utils.random(window.innerWidth * 0.15, window.innerWidth * 0.85);
                 const targetY = getRandomZoneY();
-                const duration = gsap.utils.random(8, 12); // 飛行速度放慢
-                const nextDir = targetX < lastX ? 'toLeft' : 'toRight';
+                const duration = gsap.utils.random(6, 9);
+                const movingLeft = targetX < lastX;
+                // CSS 鏡像翻轉
+                let scaleXValue = isLType ? (movingLeft ? baseScale : -baseScale) : (movingLeft ? -baseScale : baseScale);
 
-                let nextScaleX = baseScale;
-                if (poolType === 'L' && nextDir === 'toRight') nextScaleX = -baseScale;
-                if (poolType === 'R' && nextDir === 'toLeft') nextScaleX = -baseScale;
-
-                tl.to(img, { scaleX: nextScaleX, duration: 0.5 }, "-=0.3");
+                tl.to(img, { scaleX: scaleXValue, duration: 0.3 }, "-=0.2");
                 tl.to(img, { x: targetX, y: targetY, duration: duration, ease: "sine.inOut" }, "<");
-                tl.to({}, { duration: gsap.utils.random(2, 5) }); // 增加停頓時間
-                
+                if (Math.random() > 0.4) tl.to({}, { duration: gsap.utils.random(1.5, 3) });
                 lastX = targetX;
             }
 
             const finalX = Math.random() > 0.5 ? -300 : window.innerWidth + 300;
-            const finalDir = finalX < lastX ? 'toLeft' : 'toRight';
-            let finalScaleX = baseScale;
-            if (poolType === 'L' && finalDir === 'toRight') finalScaleX = -baseScale;
-            if (poolType === 'R' && finalDir === 'toLeft') finalScaleX = -baseScale;
+            const movingLeftFinal = finalX < lastX;
+            const finalScaleX = isLType ? (movingLeftFinal ? baseScale : -baseScale) : (movingLeftFinal ? -baseScale : baseScale);
             
-            tl.to(img, { scaleX: finalScaleX, duration: 0.5 });
-            tl.to(img, { x: finalX, y: getRandomZoneY(), duration: 10, ease: "power1.in" });
+            tl.to(img, { scaleX: finalScaleX, duration: 0.3 });
+            tl.to(img, { x: finalX, y: getRandomZoneY(), duration: 8, ease: "power1.in" });
 
             gsap.to(img, {
-                y: `+=${gsap.utils.random(-20, 20)}`, // 減小抖動幅度
-                rotation: gsap.utils.random(-8, 8),
-                duration: gsap.utils.random(4, 6),
+                y: `+=${gsap.utils.random(-30, 30)}`,
+                rotation: gsap.utils.random(-10, 10),
+                duration: gsap.utils.random(3, 5),
                 repeat: -1, yoyo: true, ease: "sine.inOut"
             });
         }
 
         function scheduleButterflies() {
-            // 大幅拉低出現頻率
-            setTimeout(() => { spawnButterfly(); scheduleButterflies(); }, gsap.utils.random(10000, 18000));
+            setTimeout(() => { spawnButterfly(); scheduleButterflies(); }, gsap.utils.random(4000, 8000));
         }
 
-        // --- 🔄 輪播邏輯 ---
+        // --- 🔄 核心輪播 ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
             if (messages.length === 0) return;
+            
             container.innerHTML = ''; 
             const data = messages[currentIndex];
+            
             const card = document.createElement('div');
             card.className = 'message-card';
             card.innerHTML = `
@@ -170,8 +149,11 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
+        // --- 📏 處理與混合資料 (15+1 邏輯) ---
         function processAndMixMessages(remoteData) {
             const MAX_CHARS = 150;
+            
+            // 1. 先處理遠端賓客訊息 (分頁與格式化)
             let processedRemote = [];
             remoteData.forEach(item => {
                 const text = (item.祝福語 || item.msg || item.內容 || "").toString();
@@ -184,20 +166,27 @@
                 } else { processedRemote.push({ displayName: name, displayMsg: text }); }
             });
 
+            // 2. 處理預設訊息
             let processedLocal = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
+
+            // 3. 混合邏輯：每 15 則賓客訊息插入一則預設訊息
             let mixed = [];
             let localCounter = 0;
 
             for (let i = 0; i < processedRemote.length; i++) {
                 mixed.push(processedRemote[i]);
+                // 每播完 15 則，插播一則預設
                 if ((i + 1) % 15 === 0) {
                     mixed.push(processedLocal[localCounter % processedLocal.length]);
                     localCounter++;
                 }
             }
+            
+            // 如果不足 15 則，或剩下的不滿 15 則，最後補上一則預設訊息做結尾（可選）
             if (processedRemote.length > 0 && processedRemote.length % 15 !== 0) {
                 mixed.push(processedLocal[localCounter % processedLocal.length]);
             }
+
             return mixed.length > 0 ? mixed : processedLocal;
         }
 
@@ -210,14 +199,15 @@
                     const finalData = filtered.length > 0 ? filtered : rawData.filter(item => (item.祝福語 || item.msg || item.內容));
                     if (finalData.length > 0) {
                         messages = processAndMixMessages(finalData);
-                        document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS (MINIMALIST)`;
+                        document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS (15+1)`;
                     }
                 }
-            } catch (e) { console.log("Syncing..."); }
+            } catch (e) { console.log("Sync..."); }
         }
 
         function launch() {
             document.getElementById('bg-blurred').classList.add('is-clear');
+            // 初始化先用預設訊息
             messages = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
             rotateMessage();
             setInterval(rotateMessage, 12000);
