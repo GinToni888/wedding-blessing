@@ -19,7 +19,7 @@
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* 卡片容器 */
+        /* 1050px 大氣佈局 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 10; perspective: 1800px; }
         .message-card {
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
@@ -44,108 +44,127 @@
     <div id="butterfly-layer"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="status-bar">SYSTEM ACTIVE - BIONIC PATH</div>
+    <div id="status-bar">SYSTEM ACTIVE - VARIETY MODE</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        let localMsgs = [
+        const localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
-            { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福\n We are deeply touched by your warm blessings." },
+            { name: "Maggie & Stanley", msg: "感謝你們溫慢的祝福\n We are deeply touched by your warm blessings." },
             { name: "Maggie & Stanley", msg: "祝大家玩得開心\n Have fun 🥂 " }
         ];
-        let messages = [];
+        
+        let messages = []; 
         let currentIndex = 0;
 
-        const bfPool = { L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], R: ['bf1_R.gif', 'bf2_R.gif'] };
+        // --- 🦋 蝴蝶池與牌堆邏輯 ---
+        const bfPool = { 
+            L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], 
+            R: ['bf1_R.gif', 'bf2_R.gif'] 
+        };
 
-        // --- 🦋 仿生折返系統 ---
+        // 建立牌堆緩存
+        let decks = { L: [], R: [] };
+
+        function getNextButterfly(type) {
+            // 如果牌堆空了，重新填滿並洗牌
+            if (decks[type].length === 0) {
+                decks[type] = [...bfPool[type]].sort(() => Math.random() - 0.5);
+            }
+            return decks[type].pop(); // 抽出一張牌
+        }
+
+        function getRandomZoneY() {
+            const dice = Math.random() * 100;
+            let targetZone;
+            if (dice < 70) {
+                targetZone = [1, 2, 4][Math.floor(Math.random() * 3)];
+            } else {
+                targetZone = [3, 5][Math.floor(Math.random() * 2)];
+            }
+            const randomPercent = gsap.utils.random((targetZone - 1) * 20, targetZone * 20);
+            return (window.innerHeight * randomPercent) / 100;
+        }
+
         function spawnButterfly() {
             const container = document.getElementById('butterfly-layer');
             if (container.children.length > 5) return; 
 
             const img = document.createElement('img');
-            const side = Math.random() > 0.5 ? 'L' : 'R';
-            const initialPool = side === 'L' ? bfPool.L : bfPool.R;
-            img.src = initialPool[Math.floor(Math.random() * initialPool.length)];
+            const direction = Math.random() > 0.5 ? 'toLeft' : 'toRight';
+            const poolType = direction === 'toLeft' ? 'L' : 'R';
+            
+            // 使用「抽牌機制」獲取圖片，避免重複
+            img.src = getNextButterfly(poolType);
             img.className = 'butterfly';
             
-            // 隨機屬性
-            const baseScale = gsap.utils.random(0.2, 0.4);
-            const startX = side === 'R' ? -150 : window.innerWidth + 150;
-            const startY = gsap.utils.random(10, 55); // 限制在上方約 2/3
+            const baseScale = gsap.utils.random(0.18, 0.38);
+            const startX = (direction === 'toLeft') ? window.innerWidth + 200 : -200;
+            const startY = getRandomZoneY();
 
             container.appendChild(img);
+            
+            // 初始設定：根據 L/R 原圖方向與飛行方向決定是否翻轉
+            // L原圖朝左，R原圖朝右。
+            // 如果 L圖往右飛，需 scaleX: -1。如果 R圖往左飛，需 scaleX: -1。
+            let initialScaleX = baseScale;
+            if (poolType === 'L' && direction === 'toRight') initialScaleX = -baseScale;
+            if (poolType === 'R' && direction === 'toLeft') initialScaleX = -baseScale;
 
-            // 初始狀態
-            gsap.set(img, { 
-                x: startX, 
-                y: (window.innerHeight * startY / 100), 
-                scale: baseScale,
-                scaleX: side === 'R' ? baseScale : -baseScale, // 修正頭部朝向
-                opacity: 0 
-            });
+            gsap.set(img, { x: startX, y: startY, scale: baseScale, scaleX: initialScaleX, opacity: 0 });
 
-            // 仿生路徑邏輯：複雜運動封裝
-            const tl = gsap.timeline({
-                onComplete: () => { if(img.parentNode) img.remove(); }
-            });
+            const tl = gsap.timeline({ onComplete: () => { if(img.parentNode) img.remove(); } });
+            tl.to(img, { opacity: 1, duration: 1.5 });
 
-            // 1. 飛入並淡入
-            tl.to(img, { opacity: 1, duration: 1 });
+            const uTurns = gsap.utils.random(2, 3, 1);
+            let lastX = startX;
+            let currentDir = direction;
 
-            // 2. 隨機路徑與折返
-            const moves = gsap.utils.random(2, 4, 1); // 飛 2-4 個點後離開
-            let currentX = startX;
-
-            for (let i = 0; i < moves; i++) {
-                // 決定下一個點 (在螢幕寬度 15%~85% 間盤旋)
+            for (let i = 0; i < uTurns; i++) {
                 const targetX = gsap.utils.random(window.innerWidth * 0.15, window.innerWidth * 0.85);
-                const targetY = gsap.utils.random(window.innerHeight * 0.1, window.innerHeight * 0.6);
-                const duration = gsap.utils.random(5, 8);
+                const targetY = getRandomZoneY();
+                const duration = gsap.utils.random(6, 9);
+                const nextDir = targetX < lastX ? 'toLeft' : 'toRight';
 
-                // 翻轉判斷：如果目標在左邊，scaleX 為負，反之為正
-                const isHeadingLeft = targetX < currentX;
-                tl.to(img, {
-                    scaleX: isHeadingLeft ? -baseScale : baseScale,
-                    duration: 0.4,
-                    ease: "power2.inOut"
-                }, "-=0.2"); // 轉身動作稍微提前
+                // 計算翻轉：與初始 poolType 基準比較
+                let nextScaleX = baseScale;
+                if (poolType === 'L' && nextDir === 'toRight') nextScaleX = -baseScale;
+                if (poolType === 'R' && nextDir === 'toLeft') nextScaleX = -baseScale;
 
-                tl.to(img, {
-                    x: targetX,
-                    y: targetY,
-                    rotation: isHeadingLeft ? -10 : 10,
-                    duration: duration,
-                    ease: "sine.inOut"
-                }, "<");
-
-                currentX = targetX;
+                tl.to(img, { scaleX: nextScaleX, duration: 0.3 }, "-=0.2");
+                tl.to(img, { x: targetX, y: targetY, duration: duration, ease: "sine.inOut" }, "<");
+                if (Math.random() > 0.4) tl.to({}, { duration: gsap.utils.random(1.5, 3) });
+                
+                lastX = targetX;
+                currentDir = nextDir;
             }
 
-            // 3. 最後飛走
-            const finalSide = Math.random() > 0.5 ? -200 : window.innerWidth + 200;
-            tl.to(img, {
-                scaleX: finalSide < currentX ? -baseScale : baseScale,
-                duration: 0.4
-            });
-            tl.to(img, {
-                x: finalSide,
-                y: gsap.utils.random(0, window.innerHeight * 0.5),
-                duration: 6,
-                ease: "power1.in"
+            const finalX = Math.random() > 0.5 ? -300 : window.innerWidth + 300;
+            const finalDir = finalX < lastX ? 'toLeft' : 'toRight';
+            let finalScaleX = baseScale;
+            if (poolType === 'L' && finalDir === 'toRight') finalScaleX = -baseScale;
+            if (poolType === 'R' && finalDir === 'toLeft') finalScaleX = -baseScale;
+            
+            tl.to(img, { scaleX: finalScaleX, duration: 0.3 });
+            tl.to(img, { x: finalX, y: getRandomZoneY(), duration: 8, ease: "power1.in" });
+
+            gsap.to(img, {
+                y: `+=${gsap.utils.random(-30, 30)}`,
+                rotation: gsap.utils.random(-10, 10),
+                duration: gsap.utils.random(3, 5),
+                repeat: -1, yoyo: true, ease: "sine.inOut"
             });
         }
 
         function scheduleButterflies() {
-            setTimeout(() => {
-                spawnButterfly();
-                scheduleButterflies();
-            }, gsap.utils.random(5000, 10000));
+            setTimeout(() => { spawnButterfly(); scheduleButterflies(); }, gsap.utils.random(4000, 8000));
         }
 
+        // --- 🔄 核心輪播與資料混合 ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
+            if (messages.length === 0) return;
             container.innerHTML = ''; 
             const data = messages[currentIndex];
             const card = document.createElement('div');
@@ -159,20 +178,35 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        function processRawMessages(rawData) {
+        function processAndMixMessages(remoteData) {
             const MAX_CHARS = 150;
-            let processed = [];
-            rawData.forEach(item => {
+            let processedRemote = [];
+            remoteData.forEach(item => {
                 const text = (item.祝福語 || item.msg || item.內容 || "").toString();
                 const name = (item.賓客姓名 || item.name || item.姓名 || "賓客");
                 if (text.length > MAX_CHARS) {
                     const parts = Math.ceil(text.length / MAX_CHARS);
                     for (let i = 0; i < parts; i++) {
-                        processed.push({ displayName: `${name} (${i + 1}/${parts})`, displayMsg: text.substring(i * MAX_CHARS, (i + 1) * MAX_CHARS) });
+                        processedRemote.push({ displayName: `${name} (${i + 1}/${parts})`, displayMsg: text.substring(i * MAX_CHARS, (i + 1) * MAX_CHARS) });
                     }
-                } else { processed.push({ displayName: name, displayMsg: text }); }
+                } else { processedRemote.push({ displayName: name, displayMsg: text }); }
             });
-            return processed;
+
+            let processedLocal = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
+            let mixed = [];
+            let localCounter = 0;
+
+            for (let i = 0; i < processedRemote.length; i++) {
+                mixed.push(processedRemote[i]);
+                if ((i + 1) % 15 === 0) {
+                    mixed.push(processedLocal[localCounter % processedLocal.length]);
+                    localCounter++;
+                }
+            }
+            if (processedRemote.length > 0 && processedRemote.length % 15 !== 0) {
+                mixed.push(processedLocal[localCounter % processedLocal.length]);
+            }
+            return mixed.length > 0 ? mixed : processedLocal;
         }
 
         async function fetchMessages() {
@@ -183,16 +217,16 @@
                     let filtered = rawData.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
                     const finalData = filtered.length > 0 ? filtered : rawData.filter(item => (item.祝福語 || item.msg || item.內容));
                     if (finalData.length > 0) {
-                        messages = [...processRawMessages(localMsgs), ...processRawMessages(finalData)];
-                        document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS`;
+                        messages = processAndMixMessages(finalData);
+                        document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS (DECK MODE)`;
                     }
                 }
-            } catch (e) { console.log("Network sync..."); }
+            } catch (e) { console.log("Sync..."); }
         }
 
         function launch() {
             document.getElementById('bg-blurred').classList.add('is-clear');
-            messages = processRawMessages(localMsgs);
+            messages = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
             rotateMessage();
             setInterval(rotateMessage, 12000);
             scheduleButterflies();
