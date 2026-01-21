@@ -11,30 +11,41 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        /* 背景層 */
+        /* 1. 背景層：初始設定為霧化 */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
+            /* 霧化與放大效果 */
+            filter: blur(25px);
+            transform: scale(1.1); 
+            transition: filter 3.5s ease-in-out, transform 3.5s ease-in-out;
+            will-change: filter, transform;
         }
 
-        /* 蝴蝶層 (Z-index 100 飛在最前) */
+        /* 當此 class 被加上時，背景會變清晰 */
+        #master-bg.is-clear {
+            filter: blur(0px);
+            transform: scale(1);
+        }
+
+        /* 2. 蝴蝶層 */
         #butterfly-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 100; overflow: hidden;
         }
         .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* 開場 Logo 層 (Z-index 999) */
+        /* 3. 開場 Logo 層 (層級最高) */
         #opening-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 999; background: transparent; pointer-events: none;
-            transition: opacity 3s ease-in-out;
+            transition: opacity 3s ease-in-out, transform 3s ease-in-out;
         }
         #main-logo { width: 600px; max-width: 80vw; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.15)); }
 
-        /* 卡片容器 */
+        /* 4. 卡片容器 */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
@@ -71,17 +82,16 @@
     <div id="opening-overlay"><img src="logo.png" id="main-logo" alt="Logo"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="status-bar">SYSTEM STARTING...</div>
+    <div id="status-bar">SYSTEM INITIALIZING...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        // 1. 預設資料：這保證了網頁啟動後第一張一定有東西看
         let defaultMsg = { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n感謝你們溫暖的祝福。" };
         let messages = [defaultMsg];
         let currentIndex = 0;
 
-        // --- 🦋 蝴蝶系統 ---
+        // --- 🦋 蝴蝶系統 (微縮精緻版) ---
         const bfPool = { L: ['bf_L1.gif', 'bf_L2.gif'], R: ['bf_R1.gif', 'bf_R2.gif', 'bf_R3.gif'] };
 
         function spawnButterfly(dir) {
@@ -114,7 +124,7 @@
         // --- 🔄 輪播系統 ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            container.innerHTML = ''; // 暴力清空防層疊
+            container.innerHTML = ''; 
 
             const data = (messages && messages.length > 0) ? messages[currentIndex] : defaultMsg;
             const text = (data.msg || data.content || data.內容 || "Happy Wedding!").replace(/\n/g, '<br>');
@@ -130,17 +140,14 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // --- ☁️ 非同步抓取：完全獨立運作，不干擾 UI ---
+        // --- ☁️ 非同步抓取 ---
         async function fetchMessages() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
                     const filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
-                    // 只有當抓到有效資料時才替換 messages，否則維持 defaultMsg
-                    if (filtered.length > 0) {
-                        messages = filtered;
-                    }
+                    if (filtered.length > 0) messages = filtered;
                 }
                 document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS`;
             } catch (e) { 
@@ -148,29 +155,34 @@
             }
         }
 
-        // --- 🚀 啟動：UI 優先！ ---
+        // --- 🚀 啟動邏輯 ---
         function launch() {
-            // Logo 呼吸動態 (立刻開始)
+            // Logo 呼吸動態
             gsap.to("#main-logo", { scale: 1.05, duration: 4, repeat: -1, yoyo: true, ease: "sine.inOut" });
 
             // 1. 設定固定的開場時間 (6 秒)
             setTimeout(() => {
+                // A. 背景變清晰 (觸發 CSS Transition)
+                document.getElementById('master-bg').classList.add('is-clear');
+
+                // B. Logo 開始淡出
                 const overlay = document.getElementById('opening-overlay');
                 overlay.style.opacity = 0; 
+                overlay.style.transform = "translateY(-20px)"; // 輕微向上漂浮感
                 
-                // 2. 當 Logo 淡出完成後 (配合 CSS 3s transition)
+                // 2. 當過渡完成後 (約 3.5 秒後)
                 setTimeout(() => {
                     overlay.style.display = 'none';
                     
-                    // 3. 立刻啟動 UI：播預設卡片 & 蝴蝶起飛
+                    // 3. UI 啟動
                     rotateMessage(); 
                     setInterval(rotateMessage, 11000); 
                     scheduleButterflies(); 
 
-                    // 4. 最後才去撈資料：這是為了讓畫面先動起來，網路慢也不怕
+                    // 4. 背景才開始抓資料
                     fetchMessages(); 
                     setInterval(fetchMessages, 45000); 
-                }, 3000); 
+                }, 3500); 
             }, 6000); 
         }
 
