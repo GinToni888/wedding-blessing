@@ -11,6 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
+        /* 背景：已修正為 wedding-bg.png */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
@@ -19,7 +20,7 @@
 
         /* 開場 Logo 層 */
         #opening-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 120vh;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: grid; place-items: center; z-index: 999;
             background: transparent; pointer-events: none;
         }
@@ -40,7 +41,7 @@
         .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; font-weight: 500; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 使用原生 CSS 動畫替代 GSAP 卡片控制，解決亂飄與初始化失敗 */
+        /* 卡片進退場動畫 (CSS Keyframes) */
         .card-enter { animation: cardIn 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
         .card-exit { animation: cardOut 2.0s ease-in forwards; pointer-events: none; }
 
@@ -53,9 +54,6 @@
             to { opacity: 0; transform: scale(0.5) translateZ(-600px); filter: blur(10px); }
         }
 
-        #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
-        .butterfly { position: absolute; will-change: transform; }
-        
         #status-bar { position: fixed; bottom: 10px; left: 15px; font-size: 10px; color: rgba(0,0,0,0.2); z-index: 1000; }
     </style>
 </head>
@@ -67,7 +65,6 @@
         <img src="logo.png" id="main-logo" alt="Logo">
     </div>
 
-    <div id="butterfly-layer"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
     
     <div id="status-bar">READY</div>
@@ -75,52 +72,21 @@
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        // 確保初始資料不為空
         let defaultMsg = { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n感謝你們溫暖的祝福。", status: "ok" };
         let messages = [defaultMsg];
         let currentIndex = 0;
 
-        // 蝴蝶資源
-        const bfPool = { left: ['bf_L1.gif', 'bf_L2.gif'], right: ['bf_R1.gif', 'bf_R2.gif', 'bf_R3.gif'] };
-
-        function spawnButterfly(dir) {
-            if (!window.gsap) return; // 容錯
-            const container = document.getElementById('butterfly-layer');
-            const img = document.createElement('img');
-            const pool = dir === 'L' ? bfPool.left : bfPool.right;
-            img.src = pool[Math.floor(Math.random() * pool.length)];
-            img.className = 'butterfly';
-            container.appendChild(img);
-            
-            const startY = (Math.random() * 80 + 10) + "vh";
-            const scale = (Math.random() * 0.3 + 0.4);
-            
-            if (dir === 'R') {
-                gsap.set(img, { x: -250, y: startY, scale: scale, opacity: 0 });
-                gsap.to(img, { x: window.innerWidth + 250, opacity: 1, duration: 15, ease: "none", onComplete: () => img.remove() });
-            } else {
-                gsap.set(img, { x: window.innerWidth + 250, y: startY, scale: scale, opacity: 0 });
-                gsap.to(img, { x: -250, opacity: 1, duration: 15, ease: "none", onComplete: () => img.remove() });
-            }
-        }
-
-        function launchWave() {
-            for(let i=0; i<2; i++) setTimeout(() => spawnButterfly('L'), Math.random() * 5000);
-            for(let i=0; i<3; i++) setTimeout(() => spawnButterfly('R'), Math.random() * 5000);
-        }
-
-        // 核心輪播：不依賴 GSAP
+        // 核心輪播邏輯
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            
-            // 退場邏輯
+            if (!container) return;
+
             const oldCard = container.querySelector('.message-card');
             if (oldCard) {
                 oldCard.className = 'message-card card-exit';
                 setTimeout(() => oldCard.remove(), 2100);
             }
 
-            // 進場邏輯
             if (messages.length === 0) messages = [defaultMsg];
             const data = messages[currentIndex];
             const newCard = document.createElement('div');
@@ -141,8 +107,6 @@
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const rawData = await res.json();
-                
-                // 更強壯的解析邏輯：確保它一定是陣列
                 const data = Array.isArray(rawData) ? rawData : [];
 
                 if (data.length > 0) {
@@ -160,9 +124,8 @@
         }
 
         function init() {
-            updateData(); // 背景更新
+            updateData(); 
             
-            // Logo 動畫 (保留 GSAP 做非關鍵路徑)
             if (window.gsap) {
                 gsap.to("#main-logo", { scale: 1.1, duration: 4, ease: "power1.inOut" });
                 gsap.to("#opening-overlay", { 
@@ -171,13 +134,10 @@
                         document.getElementById("opening-overlay").style.display = 'none';
                         rotateMessage();
                         setInterval(rotateMessage, 11000); 
-                        launchWave();
-                        setInterval(launchWave, 20000);
                         setInterval(updateData, 45000);
                     } 
                 });
             } else {
-                // 如果 GSAP 沒載入，3秒後直接啟動
                 setTimeout(() => {
                     document.getElementById("opening-overlay").style.display = 'none';
                     rotateMessage();
