@@ -8,60 +8,46 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --cream-bg: #fdfaf5; --sage-green: #7d8c78; --gold: #c5a059; --text-color: #4a4a4a; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        /* 1. 背景圖層 */
+        /* 1. 背景層 */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
         }
 
-        /* 2. 載入遮罩層 (z-index 999 最高級) */
+        /* 2. Loading Logo 層 (層級最高 999) */
         #loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(253, 250, 245, 0.6); /* 淡淡奶油色遮罩 */
-            backdrop-filter: blur(8px);
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
-            z-index: 999;
-            transition: opacity 2s ease-in-out, visibility 2s;
+            z-index: 999; background: transparent; pointer-events: none;
+            transition: opacity 3s ease-in-out;
         }
-        #loading-logo {
-            width: 600px; max-width: 80vw;
-            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.15));
-            animation: logoPulse 4s ease-in-out infinite;
-        }
-        @keyframes logoPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
+        #main-logo { width: 600px; max-width: 80vw; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.15)); }
 
-        /* 3. 環境生物圖層 */
-        #ambient-layer {
+        /* 3. 環境生物層 (蝴蝶) */
+        #butterfly-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5; pointer-events: none; overflow: hidden;
+            pointer-events: none; z-index: 5; overflow: hidden;
         }
-        .creature { position: absolute; opacity: 0; will-change: transform; }
+        .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* 4. 主容器 (卡片) */
+        /* 4. 卡片容器 */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 10; perspective: 1200px;
         }
 
-        /* 5. 經典信紙卡片 */
         .message-card {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.95);
-            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-            border: 1px solid #f0f0f0;
-            outline: 12px solid rgba(255, 255, 255, 0.5);
-            padding: 70px 90px;
-            width: 850px; max-width: 85%;
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
-            border-radius: 4px;
+            position: relative; background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
+            padding: 70px 90px; width: 850px; max-width: 85%; text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.06); border-radius: 4px;
+            /* 修正動畫：解決卡片尺寸變小問題，確保最終狀態是 scale(1) */
+            animation: cardEnter 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .message-card::before {
             content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px;
@@ -71,159 +57,139 @@
         .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* CSS 卡片動畫 */
-        .card-enter { animation: zoomIn 1.8s ease-out forwards; }
-        .card-exit { animation: shrinkBack 2.5s ease-in forwards; pointer-events: none; }
-        @keyframes zoomIn { from { opacity: 0; transform: scale(0.8) translateZ(-200px); } to { opacity: 1; transform: scale(1) translateZ(0); } }
-        @keyframes shrinkBack { 0% { opacity: 1; transform: scale(1) translateZ(0); } 100% { opacity: 0; transform: scale(0.3) translateZ(-800px); filter: blur(15px); } }
+        @keyframes cardEnter {
+            from { opacity: 0; transform: scale(0.95) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
 
-        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 11px; color: rgba(0,0,0,0.3); z-index: 100; }
+        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(0,0,0,0.2); z-index: 1000; }
     </style>
 </head>
 <body>
 
     <div id="master-bg"></div>
+    <div id="butterfly-layer"></div>
+    <div id="opening-overlay"><img src="logo.png" id="main-logo" alt="Logo"></div>
+    <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="loading-overlay">
-        <img src="logo.png" id="loading-logo" alt="Maggie & Stanley Logo">
-    </div>
-
-    <div id="ambient-layer"></div>
-
-    <div id="display-wrapper">
-        <div id="card-container" style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
-            </div>
-    </div>
-
-    <div id="status-bar">PREPARING BLESSINGS...</div>
+    <div id="status-bar">SYSTEM STARTING...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
-        let messages = [];
+        
+        // 預設資料：確保一開場絕對有東西可以播放
+        let defaultMsg = { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n感謝你們溫暖的祝福。" };
+        let messages = [defaultMsg];
         let currentIndex = 0;
-        let isLooping = false;
 
-        // --- A. 環境生物動畫系統 (蝴蝶與鳥) ---
-        const creatures = {
-            butterflies: ['bf1_L.gif', 'bf2_L.gif', 'bf_L.gif', 'bf1_R.gif', 'bf2_R.gif'],
-            birds: ['bird1.gif']
+        // --- 🦋 仿生蝴蝶系統：方向鎖定 ---
+        const bfPool = { 
+            L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], 
+            R: ['bf1_R.gif', 'bf2_R.gif'] 
         };
 
-        function spawnCreature(type) {
-            const container = document.getElementById('ambient-layer');
-            const el = document.createElement('img');
-            const list = creatures[type];
-            el.src = list[Math.floor(Math.random() * list.length)];
-            el.className = 'creature';
-            container.appendChild(el);
+        function spawnButterfly(dir) {
+            const container = document.getElementById('butterfly-layer');
+            if (container.children.length > 3) return; 
 
-            const startSide = Math.random() > 0.5 ? 'left' : 'right';
-            const startY = Math.random() * window.innerHeight;
-            const scale = type === 'butterflies' ? gsap.utils.random(0.4, 0.7) : gsap.utils.random(0.8, 1.2);
-            const duration = type === 'butterflies' ? gsap.utils.random(15, 25) : gsap.utils.random(8, 12);
-            
-            gsap.set(el, {
-                x: startSide === 'left' ? -150 : window.innerWidth + 150,
-                y: startY,
-                scale: scale,
-                opacity: 0,
-                scaleX: startSide === 'right' ? -1 : 1 
-            });
+            const img = document.createElement('img');
+            const pool = dir === 'L' ? bfPool.L : bfPool.R;
+            img.src = pool[Math.floor(Math.random() * pool.length)];
+            img.className = 'butterfly';
+            img.onerror = () => img.remove();
 
-            gsap.to(el, {
-                x: startSide === 'left' ? window.innerWidth + 150 : -150,
-                y: startY + gsap.utils.random(-200, 200),
-                opacity: 1,
-                duration: duration,
-                ease: "none",
-                onComplete: () => el.remove()
-            });
+            const scale = gsap.utils.random(0.18, 0.35); 
+            const startY = gsap.utils.random(15, 80);
+            const duration = gsap.utils.random(25, 40);
 
-            if (type === 'butterflies') {
-                gsap.to(el, {
-                    y: `+=${gsap.utils.random(-100, 100)}`,
-                    duration: gsap.utils.random(2, 4),
-                    repeat: -1,
-                    yoyo: true,
-                    ease: "sine.inOut"
-                });
-            }
+            container.appendChild(img);
+            gsap.set(img, { x: dir === 'R' ? -200 : window.innerWidth + 200, y: (window.innerHeight * startY / 100), scale: scale, opacity: 1 });
+            gsap.to(img, { x: dir === 'R' ? window.innerWidth + 200 : -200, duration: duration, ease: "none", onComplete: () => img.remove() });
+            gsap.to(img, { y: `+=${gsap.utils.random(-150, 150)}`, duration: gsap.utils.random(6, 10), repeat: -1, yoyo: true, ease: "sine.inOut" });
         }
 
-        // --- B. 資料抓取 & 移除載入畫面 ---
+        function scheduleButterflies() {
+            setTimeout(() => {
+                spawnButterfly(Math.random() > 0.4 ? 'R' : 'L');
+                scheduleButterflies();
+            }, gsap.utils.random(8000, 15000));
+        }
+
+        // --- 🔄 輪播系統：暴力清空防層疊 ---
+        function rotateMessage() {
+            const container = document.getElementById('card-container');
+            container.innerHTML = ''; 
+
+            const data = (messages && messages.length > 0) ? messages[currentIndex] : defaultMsg;
+            // 修正欄位抓取邏輯：加入對應您的 Google Sheet 標題「賓客姓名」與「祝福語」
+            const text = (data.msg || data.祝福語 || data.content || data.內容 || "Happy Wedding!").toString().replace(/\n/g, '<br>');
+            const name = (data.name || data.賓客姓名 || data.姓名 || "賓客");
+            
+            const card = document.createElement('div');
+            card.className = 'message-card';
+            card.innerHTML = `
+                <div class="sender">— ${name} —</div>
+                <div class="content">${text}</div>
+                <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
+            `;
+            container.appendChild(card);
+            currentIndex = (currentIndex + 1) % messages.length;
+        }
+
+        // --- ☁️ 非同步抓取：完全獨立，不干擾 UI ---
         async function fetchMessages() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
-                if (data && data.length > 0) {
-                    messages = data.map(item => ({
-                        name: item.name || item.姓名 || "賓客",
-                        msg: item.msg || item.content || item.內容 || "新婚快樂！"
-                    }));
-                    document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length} MESSAGES`;
-                    
-                    if (!isLooping) {
-                        isLooping = true;
-                        // 資料抓到後，稍微延遲讓 Logo 展現一下，再移除載入畫面
-                        setTimeout(hideLoading, 2000);
+                if (Array.isArray(data) && data.length > 0) {
+                    // 放寬過濾條件，並確保抓到資料時才更新
+                    const filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
+                    if (filtered.length > 0) {
+                        messages = filtered;
+                        document.getElementById('status-bar').innerText = `LIVE: ${messages.length} MESSAGES`;
+                    } else {
+                        document.getElementById('status-bar').innerText = "WAITING FOR APPROVAL (OK)";
                     }
                 }
             } catch (e) { 
-                document.getElementById('status-bar').innerText = "SYNCING..."; 
-                // 若持續失敗，3秒後強制開啟（保底機制）
-                setTimeout(hideLoading, 3000);
+                console.log("Sync delay..."); 
+                document.getElementById('status-bar').innerText = "STANDBY MODE";
             }
         }
 
-        function hideLoading() {
-            const overlay = document.getElementById('loading-overlay');
-            if (!overlay) return;
-            
-            // 使用 GSAP 讓 Logo 縮小並淡出
-            gsap.to("#loading-logo", { scale: 1.2, opacity: 0, duration: 1.5, ease: "power2.in" });
-            gsap.to(overlay, { 
-                opacity: 0, 
-                duration: 2, 
-                onComplete: () => {
-                    overlay.style.visibility = 'hidden';
-                    rotateMessage(); // 開始播放第一張卡片
-                }
-            });
+        // --- 🚀 啟動邏輯：先播 Logo $\rightarrow$ 預設訊息與蝴蝶 $\rightarrow$ 雲端同步 ---
+        function launch() {
+            // Logo 呼吸動態立刻開始
+            gsap.to("#main-logo", { scale: 1.05, duration: 4, repeat: -1, yoyo: true, ease: "sine.inOut" });
+
+            // 1. 固定展示 Logo 6 秒 (這段期間不做任何會阻塞的動作)
+            setTimeout(() => {
+                const overlay = document.getElementById('opening-overlay');
+                overlay.style.opacity = 0; 
+                
+                // 2. 當 Logo 淡出完成後 (約 3 秒)
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    
+                    // 3. 樂觀啟動：立刻播放預設歡迎卡片 & 蝴蝶
+                    rotateMessage(); 
+                    setInterval(rotateMessage, 12000); 
+                    scheduleButterflies(); 
+
+                    // 4. 最後才去撈資料：背景運行，網路慢也不會卡死畫面
+                    fetchMessages(); 
+                    setInterval(fetchMessages, 45000); 
+                }, 3000); 
+            }, 6000); 
         }
 
-        // --- C. 卡片輪播 ---
-        function rotateMessage() {
-            const container = document.getElementById('card-container');
-            // 暴力清空機制，防止 Chrome 層疊
-            container.innerHTML = '';
+        window.onload = launch;
 
-            const data = messages.length > 0 ? messages[currentIndex] : { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！" };
-            
-            const newCard = document.createElement('div');
-            newCard.className = 'message-card card-enter active-card';
-            newCard.innerHTML = `
-                <div class="sender">— ${data.name} —</div>
-                <div class="content">${data.msg.toString().replace(/\n/g, '<br>')}</div>
-                <div class="wedding-tag">Mandarin Oriental Taipei</div>
-            `;
-            container.appendChild(newCard);
-            currentIndex = (currentIndex + 1) % messages.length;
-        }
-
-        // --- D. 啟動與循環 ---
-        window.onload = () => {
-            fetchMessages();
-            setInterval(fetchMessages, 45000);
-            setInterval(() => { if(isLooping) rotateMessage(); }, 10000);
-
-            // 啟動環境生物
-            setInterval(() => spawnCreature('butterflies'), 4000);
-            setInterval(() => spawnCreature('birds'), 12000);
-        };
-
+        // 空白鍵落櫻特效
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#ffb6c1', '#fff0f5', '#fdf5e6'] });
+                e.preventDefault();
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#fff0f5', '#fdf5e6'] });
             }
         });
     </script>
