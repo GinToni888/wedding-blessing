@@ -7,19 +7,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        /* --- 全局變數與基礎設定 --- */
         :root { --cream-bg: #fdfaf5; --sage-green: #7d8c78; --gold: #c5a059; --text-color: #4a4a4a; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        /* 1. 背景圖層 (z-index: 1) */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
         }
 
-        /* 2. 蝴蝶圖層 (z-index: 100) - 在最前方飛過卡片 */
         #butterfly-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 100; overflow: hidden;
@@ -27,36 +24,32 @@
         .butterfly { 
             position: absolute; will-change: transform; 
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));
-            opacity: 0; /* 預設隱藏，由 GSAP 控制顯示 */
+            opacity: 0;
         }
 
-        /* 3. 開場 Logo 層 (z-index: 999) */
         #opening-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 999; background: transparent; pointer-events: none;
-            transition: opacity 3.5s ease-in-out; /* 優雅的長淡出 */
+            transition: opacity 3.5s ease-in-out;
         }
         #main-logo {
             width: 600px; max-width: 80vw;
             filter: drop-shadow(0 10px 30px rgba(0,0,0,0.1));
         }
 
-        /* 4. 卡片容器 (z-index: 10) */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 10; perspective: 1200px;
         }
 
-        /* --- 卡片樣式 --- */
         .message-card {
             position: relative; background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
             border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
             padding: 70px 90px; width: 850px; max-width: 85%; text-align: center;
             box-shadow: 0 25px 60px rgba(0,0,0,0.06); border-radius: 4px;
-            /* 核心動畫：優雅的淡入縮放 */
             animation: elegantFadeIn 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .message-card::before {
@@ -67,7 +60,6 @@
         .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 核心 Keyframes：極簡穩定的進場 */
         @keyframes elegantFadeIn {
             from { opacity: 0; transform: scale(0.92) translateY(20px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
@@ -80,15 +72,8 @@
 
     <div id="master-bg"></div>
     <div id="butterfly-layer"></div>
-
-    <div id="opening-overlay">
-        <img src="logo.png" id="main-logo" alt="Maggie & Stanley">
-    </div>
-
-    <div id="display-wrapper">
-        <div id="card-container"></div>
-    </div>
-
+    <div id="opening-overlay"><img src="logo.png" id="main-logo" alt="Logo"></div>
+    <div id="display-wrapper"><div id="card-container"></div></div>
     <div id="status-bar">System Initializing...</div>
 
     <script>
@@ -97,64 +82,57 @@
         let messages = [defaultMsg];
         let currentIndex = 0;
 
-        // --- 🦋 極簡仿生蝴蝶系統 (優雅、稀疏、慢速) ---
+        // --- 🦋 蝴蝶系統 (尺寸大幅縮小) ---
         const bfPool = { L: ['bf_L1.gif', 'bf_L2.gif'], R: ['bf_R1.gif', 'bf_R2.gif', 'bf_R3.gif'] };
 
         function spawnBiomimeticButterfly(dir) {
             if (!window.gsap) return;
             const container = document.getElementById('butterfly-layer');
-            
-            // 數量控制：如果場上已經超過 4 隻，暫停生成
-            if (container.children.length > 5) return;
+            if (container.children.length > 4) return; // 數量控制
 
             const img = document.createElement('img');
             const pool = dir === 'L' ? bfPool.L : bfPool.R;
-            const src = pool[Math.floor(Math.random() * pool.length)];
-            img.src = src;
+            img.src = pool[Math.floor(Math.random() * pool.length)];
             img.className = 'butterfly';
-            img.onerror = () => img.remove(); // 破圖救援
+            img.onerror = () => img.remove();
 
-            // 參數調整：更慢、更優雅
+            // 參數調整：尺寸大幅縮小
             const startY = gsap.utils.random(15, 85);
-            const scale = gsap.utils.random(0.1, 0.6); // 大小差異化
-            const duration = gsap.utils.random(20, 35); // 超慢速飛行 (20-35秒)
-            const wanderY = gsap.utils.random(80, 180); // 更大的飄移幅度
+            const scale = gsap.utils.random(0.25, 0.55); // 縮小至 0.25 - 0.55
+            const duration = gsap.utils.random(22, 38); // 極慢速
+            const wanderY = gsap.utils.random(80, 150);
             
             container.appendChild(img);
-            gsap.set(img, { x: dir === 'R' ? -250 : window.innerWidth + 250, y: (window.innerHeight * startY / 100), scale: scale, opacity: 1, rotation: dir === 'R' ? 10 : -10 });
+            gsap.set(img, { x: dir === 'R' ? -250 : window.innerWidth + 250, y: (window.innerHeight * startY / 100), scale: scale, opacity: 1, rotation: dir === 'R' ? 8 : -8 });
             gsap.to(img, { x: dir === 'R' ? window.innerWidth + 250 : -250, duration: duration, ease: "none", onComplete: () => img.remove() });
-            gsap.to(img, { y: `+=${dir === 'R' ? wanderY : -wanderY}`, duration: gsap.utils.random(5, 8), repeat: -1, yoyo: true, ease: "sine.inOut" });
+            gsap.to(img, { y: `+=${dir === 'R' ? wanderY : -wanderY}`, duration: gsap.utils.random(6, 10), repeat: -1, yoyo: true, ease: "sine.inOut" });
         }
 
         function scheduleNextButterfly() {
-            // 頻率大幅降低：4 到 10 秒才出一隻
             setTimeout(() => {
                 spawnBiomimeticButterfly(Math.random() > 0.4 ? 'R' : 'L');
                 scheduleNextButterfly();
-            }, gsap.utils.random(4000, 10000));
+            }, gsap.utils.random(5000, 12000)); // 頻率極低
         }
 
-        // --- 🔄 核心輪播邏輯 (極簡穩定版) ---
+        // --- 🔄 核心輪播邏輯 (修復資料讀取錯誤) ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            
-            // 1. 暴力清空：最穩定、最不會出錯的方法
-            container.innerHTML = '';
+            container.innerHTML = ''; // 暴力清空，保證不層疊
 
-            // 2. 準備資料
             if (messages.length === 0) messages = [defaultMsg];
             const data = messages[currentIndex];
             
-            // 3. 建立新卡片 (自帶優雅進場動畫)
             const newCard = document.createElement('div');
             newCard.className = 'message-card';
+            // 關鍵修復：加入多欄位容錯讀取
+            const textContent = (data.msg || data.content || data.內容 || "新婚快樂").replace(/\n/g, '<br>');
             newCard.innerHTML = `
-                <div class="sender">— ${data.name} —</div>
-                <div class="content">${(data.msg || data.content || "新婚快樂").replace(/\n/g, '<br>')}</div>
+                <div class="sender">— ${data.name || "賓客"} —</div>
+                <div class="content">${textContent}</div>
                 <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
             `;
             container.appendChild(newCard);
-            
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
@@ -171,5 +149,29 @@
             } catch (e) { console.log("Sync skipped"); }
         }
 
-        // --- 🚀 啟動序列 ---
         function init() {
+            fetchMessages();
+            const logo = document.getElementById('main-logo');
+            if (window.gsap) gsap.to(logo, { scale: 1.03, duration: 5, repeat: -1, yoyo: true, ease: "sine.inOut" });
+            
+            setTimeout(() => {
+                const overlay = document.getElementById('opening-overlay');
+                overlay.style.opacity = 0;
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    rotateMessage();
+                    setInterval(rotateMessage, 12000); 
+                    setInterval(fetchMessages, 45000);
+                    scheduleNextButterfly();
+                }, 3500);
+            }, 5000);
+        }
+
+        window.onload = init;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#fff0f5', '#fdf5e6'] });
+        });
+    </script>
+</body>
+</html>
