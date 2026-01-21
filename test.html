@@ -17,12 +17,12 @@
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
             filter: blur(25px); transform: scale(1.1); 
-            transition: filter 4s ease-in-out, transform 4s ease-in-out;
+            transition: filter 4.5s ease-in-out, transform 4.5s ease-in-out;
             will-change: filter, transform;
         }
         #master-bg.is-clear { filter: blur(0px); transform: scale(1); }
 
-        /* 2. 蝴蝶層 (z-index 100) - 飛在卡片前方 */
+        /* 2. 蝴蝶層 (z-index 100) */
         #butterfly-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 100; overflow: hidden;
@@ -62,7 +62,7 @@
 
         @keyframes cardEnter { from { opacity: 0; transform: scale(0.95) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(0,0,0,0.2); z-index: 1000; }
+        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(0,0,0,0.1); z-index: 1000; }
     </style>
 </head>
 <body>
@@ -72,19 +72,23 @@
     <div id="opening-overlay"><img src="logo.png" id="main-logo" alt="Logo"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="status-bar">SYSTEM STARTING...</div>
+    <div id="status-bar">SYSTEM INITIALIZING...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        let defaultMsg = { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n感謝你們溫暖的祝福。" };
-        let messages = [defaultMsg];
+        // 1. 三張預設保底卡片 (視覺重心：Maggie & Stanley)
+        let messages = [
+            { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n在此留下您的祝福。" },
+            { name: "Maggie & Stanley", msg: "在森林的見證下，\n開啟我們的新篇章。" },
+            { name: "Maggie & Stanley", msg: "感謝所有賓客的參與，\n祝大家有個美好的午後。" }
+        ];
         let currentIndex = 0;
 
         // --- 🦋 方向鎖定蝴蝶系統 ---
         const bfPool = {
-            L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], // 頭朝左
-            R: ['bf1_R.gif', 'bf2_R.gif']              // 頭朝右
+            L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], 
+            R: ['bf1_R.gif', 'bf2_R.gif']              
         };
 
         function spawnButterfly(dir) {
@@ -97,57 +101,31 @@
             img.className = 'butterfly';
             img.onerror = () => img.remove();
 
-            // 調整：將出生高度限制在上方 15% 到 55% 之間 (確保在上方 2/3)
-            const startY = gsap.utils.random(15, 55); 
-            // 比例調整：0.15 ~ 0.45
-            const scale = gsap.utils.random(0.15, 0.45); 
-            const duration = gsap.utils.random(18, 32); 
-            // 路徑飄移幅度縮小，避免掉出上方區域
+            // 調整：路徑在上方 2/3 (15% ~ 50%)
+            const startY = gsap.utils.random(15, 50); 
+            const scale = gsap.utils.random(0.18, 0.42); // 0.5 以下
+            const duration = gsap.utils.random(20, 35); 
             const wanderY = gsap.utils.random(50, 100); 
 
             container.appendChild(img);
-
-            // 1. 設定初始位置
-            gsap.set(img, { 
-                x: dir === 'R' ? -200 : window.innerWidth + 200, 
-                y: (window.innerHeight * startY / 100), 
-                scale: scale, 
-                opacity: 0,
-                rotation: dir === 'R' ? 10 : -10 
-            });
-
-            // 2. 橫向飛行與淡入
-            gsap.to(img, {
-                x: dir === 'R' ? window.innerWidth + 200 : -200,
-                opacity: 1,
-                duration: duration,
-                ease: "none",
-                onComplete: () => img.remove()
-            });
-
-            // 3. 仿生路徑：上下蜿蜒飄移
-            gsap.to(img, {
-                y: `+=${gsap.utils.random(-wanderY, wanderY)}`,
-                duration: gsap.utils.random(4, 8),
-                repeat: -1,
-                yoyo: true,
-                ease: "sine.inOut"
-            });
+            gsap.set(img, { x: dir === 'R' ? -200 : window.innerWidth + 200, y: (window.innerHeight * startY / 100), scale: scale, opacity: 0, rotation: dir === 'R' ? 10 : -10 });
+            gsap.to(img, { x: dir === 'R' ? window.innerWidth + 200 : -200, opacity: 1, duration: duration, ease: "none", onComplete: () => img.remove() });
+            gsap.to(img, { y: `+=${gsap.utils.random(-wanderY, wanderY)}`, duration: gsap.utils.random(5, 8), repeat: -1, yoyo: true, ease: "sine.inOut" });
         }
 
         function scheduleButterflies() {
             setTimeout(() => {
-                spawnButterfly(Math.random() > 0.45 ? 'R' : 'L');
+                spawnButterfly(Math.random() > 0.4 ? 'R' : 'L');
                 scheduleButterflies();
-            }, gsap.utils.random(5000, 12000));
+            }, gsap.utils.random(6000, 12000));
         }
 
-        // --- 🔄 輪播系統 ---
+        // --- 🔄 輪播系統：強制清空防層疊 ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
             container.innerHTML = ''; 
 
-            const data = (messages && messages.length > 0) ? messages[currentIndex] : defaultMsg;
+            const data = messages[currentIndex];
             const text = (data.msg || data.祝福語 || data.content || "Happy Wedding!").toString().replace(/\n/g, '<br>');
             const name = (data.name || data.賓客姓名 || "賓客");
             
@@ -162,22 +140,31 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // --- ☁️ 非同步資料同步 ---
+        // --- ☁️ 非同步資料同步 (不影響啟動) ---
         async function fetchMessages() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
                     const filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
-                    if (filtered.length > 0) messages = filtered;
+                    if (filtered.length > 0) {
+                        // 當抓到資料時，我們採取「合併」策略，將預設卡片保留在最前面
+                        const initialMessages = [
+                            { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n感謝你們溫暖的祝福。" }
+                        ];
+                        messages = initialMessages.concat(filtered);
+                        document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS`;
+                    }
                 }
-                document.getElementById('status-bar').innerText = `LIVE: ${messages.length} MESSAGES`;
-            } catch (e) { document.getElementById('status-bar').innerText = "DATA STANDBY"; }
+            } catch (e) { document.getElementById('status-bar').innerText = "OFFLINE MODE"; }
         }
 
         // --- 🚀 啟動邏輯 ---
         function launch() {
             gsap.to("#main-logo", { scale: 1.05, duration: 4, repeat: -1, yoyo: true, ease: "sine.inOut" });
+
+            // 背景默默抓資料，不等待
+            fetchMessages();
 
             setTimeout(() => {
                 document.getElementById('master-bg').classList.add('is-clear');
@@ -190,19 +177,14 @@
                     rotateMessage(); 
                     setInterval(rotateMessage, 12000); 
                     scheduleButterflies(); 
-                    fetchMessages(); 
                     setInterval(fetchMessages, 45000); 
                 }, 3500); 
             }, 6500); 
         }
 
         window.onload = launch;
-
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#fff0f5', '#fdf5e6'] });
-            }
+            if (e.code === 'Space') confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#fff0f5', '#fdf5e6'] });
         });
     </script>
 </body>
