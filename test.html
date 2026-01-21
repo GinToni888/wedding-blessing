@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Maggie & Stanley Wedding Wall</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
@@ -19,27 +20,35 @@
             font-family: "STFangsong", "NSimSun", "仿宋", serif;
         }
 
-        /* 1. 背景圖層 (z-index: 1) - 已修正為 png */
+        /* 1. 背景圖層 (png) */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
         }
 
-        /* 2. 蝴蝶圖層 (z-index: 100) - 在最前方飛過卡片 */
+        /* 2. 蝴蝶圖層 (最高層級) */
         #butterfly-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 100; overflow: hidden;
         }
+        /* 蝴蝶基礎樣式：增加投影提升立體感 */
+        .butterfly { 
+            position: absolute; 
+            will-change: transform; 
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));
+            /* 預設隱藏，等 GSAP 就位再顯示，防止閃爍 */
+            opacity: 0; 
+        }
 
-        /* 3. 卡片容器 (z-index: 10) */
+        /* 3. 卡片容器 */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 10; perspective: 1200px;
         }
 
-        /* 4. 開場 Logo 層 (z-index: 999) */
+        /* 4. 開場 Logo 層 */
         #opening-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
@@ -48,17 +57,15 @@
         #main-logo {
             width: 600px; max-width: 80vw;
             filter: drop-shadow(0 10px 30px rgba(0,0,0,0.1));
-            animation: logoPulse 4s ease-in-out infinite;
         }
-        .logo-fade-out { animation: logoFadeOut 2.5s forwards !important; }
 
-        /* --- 視覺組件 --- */
+        /* --- 卡片樣式與 CSS 動畫 (維持穩定不變) --- */
         .message-card {
-            position: absolute; background: rgba(255, 255, 255, 0.95);
+            position: relative; background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
             border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
             padding: 70px 90px; width: 850px; max-width: 85%; text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.05); border-radius: 4px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.06); border-radius: 4px;
         }
         .message-card::before {
             content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px;
@@ -68,39 +75,10 @@
         .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* --- CSS 動畫定義 --- */
-        @keyframes zoomIn {
-            from { opacity: 0; transform: scale(0.8) translateZ(-200px); }
-            to { opacity: 1; transform: scale(1) translateZ(0); }
-        }
-        @keyframes shrinkBack {
-            0% { opacity: 1; transform: scale(1) translateZ(0); }
-            100% { opacity: 0; transform: scale(0.3) translateZ(-800px); filter: blur(15px); }
-        }
-        @keyframes logoPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        @keyframes logoFadeOut {
-            to { opacity: 0; transform: scale(1.2); visibility: hidden; }
-        }
-        /* 蝴蝶飛行路徑 */
-        @keyframes flyRight {
-            from { transform: translateX(-200px) translateY(0); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            to { transform: translateX(calc(100vw + 200px)) translateY(-100px); opacity: 0; }
-        }
-        @keyframes flyLeft {
-            from { transform: translateX(calc(100vw + 200px)) translateY(0); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            to { transform: translateX(-200px) translateY(-100px); opacity: 0; }
-        }
-
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.8) translateZ(-200px); } to { opacity: 1; transform: scale(1) translateZ(0); } }
+        @keyframes shrinkBack { to { opacity: 0; transform: scale(0.3) translateZ(-800px); filter: blur(15px); } }
         .card-enter { animation: zoomIn 1.8s ease-out forwards; }
         .card-exit { animation: shrinkBack 2.5s ease-in forwards; pointer-events: none; }
-        .butterfly { position: absolute; will-change: transform; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1)); }
 
         #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 11px; color: rgba(0,0,0,0.3); z-index: 1000; }
     </style>
@@ -115,121 +93,161 @@
     </div>
 
     <div id="display-wrapper">
-        <div id="card-container" style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
-            </div>
+        <div id="card-container"></div>
     </div>
 
-    <div id="status-bar">SYSTEM INITIALIZING...</div>
+    <div id="status-bar">Initializing Bio-System...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
-        let messages = [{ name: "Maggie & Stanley", msg: "Wedding Blessing Wall\n祝福同步中..." }];
+        let defaultMsg = { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n感謝你們溫暖的祝福。", status: "ok" };
+        let messages = [defaultMsg];
         let currentIndex = 0;
-        let isLooping = false;
 
-        // --- 1. 蝴蝶發射器 (純原生 JS + CSS 動畫) ---
+        // --- 🦋 仿生蝴蝶系統 (Biomimetic Butterfly System) ---
+        // 重要：請務必確認 GitHub 上的檔名與這裡完全一致（包含大小寫）
         const bfPool = {
-            L: ['bf1_L.gif', 'bf2_L.gif'], // 頭朝左的圖 (從右往左飛)
-            R: ['bf1_R.gif', 'bf2_R.gif', 'bf3_R.gif'] // 頭朝右的圖 (從左往右飛)
+            L: ['bf_L1.gif', 'bf_L2.gif'], // 頭朝左的蝴蝶
+            R: ['bf_R1.gif', 'bf_R2.gif', 'bf_R3.gif'] // 頭朝右的蝴蝶
         };
 
-        function spawnButterfly(dir) {
+        function spawnBiomimeticButterfly(dir) {
+            // 如果 GSAP 沒載入，就不生成蝴蝶，避免報錯
+            if (!window.gsap) return; 
+
             const container = document.getElementById('butterfly-layer');
             const img = document.createElement('img');
             const pool = dir === 'L' ? bfPool.L : bfPool.R;
-            img.src = pool[Math.floor(Math.random() * pool.length)];
+            const src = pool[Math.floor(Math.random() * pool.length)];
+            img.src = src;
             img.className = 'butterfly';
-            
-            // 物理隨機性
-            const startY = Math.random() * 80 + 10; // 10vh - 90vh
-            const duration = Math.random() * 10 + 15; // 15s - 25s
-            const size = Math.random() * 40 + 60; // 60px - 100px
 
-            img.style.width = size + 'px';
-            img.style.top = startY + 'vh';
-            img.style.animation = `${dir === 'L' ? 'flyLeft' : 'flyRight'} ${duration}s linear forwards`;
+            // 🚑 破圖救援機制：如果圖片載入失敗，立刻移除元素
+            img.onerror = () => {
+                console.warn(`Butterfly image failed to load: ${src}`);
+                img.remove();
+            };
+
+            // 仿生隨機參數
+            const startY = gsap.utils.random(10, 90); // 出生高度 (vh)
+            // 大小範圍變大：0.3(遠) ~ 1.0(近)
+            const scale = gsap.utils.random(0.3, 1.0); 
+            // 速度範圍變大：12秒(快) ~ 25秒(慢)
+            const duration = gsap.utils.random(12, 25); 
+            // 隨機上下飄移幅度
+            const wanderY = gsap.utils.random(50, 150); 
             
             container.appendChild(img);
-            // 動畫結束後自動移除，防止記憶體洩漏
-            setTimeout(() => img.remove(), duration * 1000);
+
+            // 設定初始狀態
+            gsap.set(img, {
+                x: dir === 'R' ? -200 : window.innerWidth + 200,
+                y: (window.innerHeight * startY / 100),
+                scale: scale,
+                opacity: 1, // 圖片載入後顯示
+                rotation: dir === 'R' ? 15 : -15 // 初始仰角
+            });
+
+            // 主要飛行軌跡 (X軸)
+            gsap.to(img, {
+                x: dir === 'R' ? window.innerWidth + 200 : -200,
+                duration: duration,
+                ease: "none",
+                onComplete: () => img.remove() // 飛出螢幕後移除
+            });
+
+            // 次要仿生動作：上下蜿蜒飄移 (Y軸)
+            gsap.to(img, {
+                y: `+=${dir === 'R' ? wanderY : -wanderY}`, // 隨機上下
+                duration: gsap.utils.random(3, 6),
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut" // 正弦波讓轉折更柔和
+            });
+
+            // 次要仿生動作：身體隨機搖擺 (Rotation)
+            gsap.to(img, {
+                rotation: dir === 'R' ? -5 : 5,
+                duration: gsap.utils.random(1.5, 3),
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
         }
 
-        function launchButterflyWave() {
-            // 強制比例：2 隻由右往左(L)，3 隻由左往右(R)
-            for(let i=0; i<2; i++) setTimeout(() => spawnButterfly('L'), Math.random() * 5000);
-            for(let i=0; i<3; i++) setTimeout(() => spawnButterfly('R'), Math.random() * 5000);
+        // 隨機生成排程器 (取代死板的 setInterval)
+        function scheduleNextButterfly() {
+            const nextSpawnTime = gsap.utils.random(800, 4000); // 下一隻出現在 0.8 ~ 4 秒後
+            setTimeout(() => {
+                // 隨機決定方向，保持約 2:3 的比例傾向
+                const dir = Math.random() > 0.4 ? 'R' : 'L';
+                spawnBiomimeticButterfly(dir);
+                // 遞迴呼叫，繼續排程下一隻
+                scheduleNextButterfly();
+            }, nextSpawnTime);
         }
 
-        // --- 2. 資料同步 ---
-        async function fetchMessages() {
-            try {
-                const res = await fetch(`${gasUrl}?t=${Date.now()}`);
-                const data = await res.json();
-                if (data && data.length > 0) {
-                    messages = data.map(item => ({
-                        name: item.name || item.姓名 || "賓客",
-                        msg: item.msg || item.content || item.內容 || "新婚快樂！"
-                    }));
-                    document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length} MESSAGES`;
-                }
-            } catch (e) {
-                document.getElementById('status-bar').innerText = "SYNCING...";
-            }
-        }
-
-        // --- 3. 核心輪播 ---
+        // --- 核心系統 (卡片與資料) ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            const oldCard = document.querySelector('.message-card');
-            
+            const oldCard = container.querySelector('.message-card');
             if (oldCard) {
-                oldCard.classList.remove('card-enter');
-                oldCard.classList.add('card-exit');
-                setTimeout(() => oldCard.remove(), 2500);
+                oldCard.className = 'message-card card-exit';
+                setTimeout(() => oldCard.remove(), 2100);
             }
-
+            if (messages.length === 0) messages = [defaultMsg];
             const data = messages[currentIndex];
             const newCard = document.createElement('div');
             newCard.className = 'message-card card-enter';
             newCard.innerHTML = `
                 <div class="sender">— ${data.name} —</div>
-                <div class="content">${data.msg.toString().replace(/\n/g, '<br>')}</div>
+                <div class="content">${(data.msg || data.content || "新婚快樂").replace(/\n/g, '<br>')}</div>
                 <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
             `;
             container.appendChild(newCard);
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // --- 4. 啟動序列 ---
-        async function startSystem() {
-            // 背景抓取資料
-            await fetchMessages();
-            
-            // #1 & #2: Logo 停留並淡化
-            setTimeout(() => {
-                const logo = document.getElementById('main-logo');
-                logo.classList.add('logo-fade-out');
-                
-                // #3: Logo 淡化中途，第一則卡片飛入
-                setTimeout(() => {
-                    document.getElementById('opening-overlay').style.display = 'none';
-                    rotateMessage();
-                    setInterval(rotateMessage, 11000); 
-                    
-                    // 蝴蝶開始飛舞
-                    launchButterflyWave();
-                    setInterval(launchButterflyWave, 20000);
-                }, 1500);
-            }, 3000); // Logo 展示 3 秒
+        async function fetchMessages() {
+            try {
+                const res = await fetch(`${gasUrl}?t=${Date.now()}`);
+                const rawData = await res.json();
+                const data = Array.isArray(rawData) ? rawData : [];
+                if (data.length > 0) {
+                    const filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
+                    if (filtered.length > 0) messages = filtered;
+                }
+                document.getElementById('status-bar').innerText = `System Active. Messages: ${messages.length}`;
+            } catch (e) { console.log("Sync skipped"); }
         }
 
-        window.onload = startSystem;
-        setInterval(fetchMessages, 45000);
+        function init() {
+            fetchMessages();
+            // 使用 CSS 動畫控制 Logo 淡出
+            document.getElementById('main-logo').style.animation = "logoFadeOut 2s ease-in forwards 3s";
+            setTimeout(() => {
+                document.getElementById('opening-overlay').style.display = 'none';
+                rotateMessage();
+                setInterval(rotateMessage, 11000); 
+                setInterval(fetchMessages, 45000);
+                // 啟動仿生蝴蝶系統
+                scheduleNextButterfly();
+            }, 5000);
+        }
+        
+        // CSS Keyframes for Logo (補回遺漏的)
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes logoFadeOut { to { opacity: 0; visibility: hidden; } }
+            @keyframes logoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        `;
+        document.head.appendChild(style);
+        document.getElementById('main-logo').style.animation = "logoPulse 4s ease-in-out infinite";
+
+        window.onload = init;
 
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#ffb6c1', '#fff0f5', '#fdf5e6'] });
-            }
+            if (e.code === 'Space') confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#fff0f5', '#fdf5e6'] });
         });
     </script>
 </body>
