@@ -11,7 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100vw; height: 100vh; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        /* 1. 背景層：雙層霧化 (啟動後伴隨卡片變清晰) */
+        /* 背景層 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
         #bg-blurred { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -21,11 +21,11 @@
         }
         .is-clear { opacity: 0; }
 
-        /* 2. 蝴蝶層 */
+        /* 蝴蝶層 */
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
-        .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.12)); opacity: 0; }
+        .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* 3. 卡片容器：絕對置中校正 */
+        /* 卡片容器：1050px 絕對置中 */
         #display-wrapper { 
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
             width: 100vw; height: 100vh; 
@@ -37,45 +37,22 @@
             position: relative; background: rgba(255, 255, 255, 0.96);
             border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
             padding: 80px 110px; 
-            
-            /* --- 寬螢幕設定：1050px --- */
-            width: 1050px !important; 
-            min-width: 1050px !important; 
-            margin: 0 auto; 
-            flex-shrink: 0;
-            /* ------------------------ */
-
-            max-width: 92%; 
-            max-height: 85vh;
-            overflow: hidden;
-            text-align: center;
+            width: 1050px !important; min-width: 1050px !important; margin: 0 auto; flex-shrink: 0;
+            max-width: 92%; max-height: 85vh;
+            overflow: hidden; text-align: center;
             box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px;
             animation: cardEnter 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .message-card::before { content: ""; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px; border: 1px solid rgba(125, 140, 120, 0.15); pointer-events: none; }
         
         .sender { font-size: 26px; color: var(--sage-green); margin-bottom: 30px; letter-spacing: 0.25em; font-weight: bold; }
-        
-        /* 內容字體縮小至 26px */
         .content { 
-            font-size: 26px; 
-            line-height: 1.9; 
-            color: var(--text-color); 
-            margin-bottom: 40px; 
-            font-weight: 500;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            word-break: break-word;
-            white-space: pre-wrap; 
+            font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; 
+            font-weight: 500; word-wrap: break-word; white-space: pre-wrap; 
         }
-        
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        @keyframes cardEnter { 
-            from { opacity: 0; transform: scale(0.97) translateY(30px); } 
-            to { opacity: 1; transform: scale(1) translateY(0); } 
-        }
-
+        @keyframes cardEnter { from { opacity: 0; transform: scale(0.97) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(0,0,0,0.1); z-index: 1000; }
     </style>
 </head>
@@ -86,40 +63,80 @@
     <div id="butterfly-layer"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="status-bar">SYSTEM ACTIVE - 1050px</div>
+    <div id="status-bar">SYSTEM ACTIVE - BIOMIMETIC 1050px</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
         let localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
-            { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福 祝大家玩得開心\n We are deeply touched by your warm blessings.\n Have fun 🥂" },
+            { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福\n We are deeply touched by your warm blessings." },
+            { name: "Maggie & Stanley", msg: "祝大家玩得開心\n Have fun 🥂 " }
         ];
         let messages = [];
         let currentIndex = 0;
 
-        // --- 🦋 蝴蝶系統 ---
+        // --- 🦋 仿生蝴蝶系統 ---
         const bfPool = { L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], R: ['bf1_R.gif', 'bf2_R.gif'] };
+
         function spawnButterfly(dir) {
             const container = document.getElementById('butterfly-layer');
             if (container.children.length > 5) return; 
+
             const img = document.createElement('img');
             img.src = bfPool[dir][Math.floor(Math.random() * bfPool[dir].length)];
             img.className = 'butterfly';
             img.onerror = () => img.remove();
-            const startY = gsap.utils.random(15, 52); 
-            const scale = gsap.utils.random(0.18, 0.42); 
-            const duration = gsap.utils.random(22, 38); 
+
+            // 修正高度：5% ~ 60% (完全避開下方 1/3)
+            const startY = gsap.utils.random(5, 60); 
+            const scale = gsap.utils.random(0.18, 0.45); 
+            const duration = gsap.utils.random(20, 35); 
+
             container.appendChild(img);
-            gsap.set(img, { x: dir === 'R' ? -300 : window.innerWidth + 300, y: (window.innerHeight * startY / 100), scale: scale, opacity: 1 });
-            gsap.to(img, { x: dir === 'R' ? window.innerWidth + 300 : -300, duration: duration, ease: "none", onComplete: () => { if(img.parentNode) img.remove(); } });
-            gsap.to(img, { y: `+=${gsap.utils.random(-80, 80)}`, duration: gsap.utils.random(6, 11), repeat: -1, yoyo: true, ease: "sine.inOut" });
+            
+            // 初始設定
+            gsap.set(img, { 
+                x: dir === 'R' ? -300 : window.innerWidth + 300, 
+                y: (window.innerHeight * startY / 100), 
+                scale: scale, 
+                opacity: 0,
+                rotation: dir === 'R' ? 15 : -15 
+            });
+
+            // 1. 橫向主路徑與淡入
+            gsap.to(img, {
+                x: dir === 'R' ? window.innerWidth + 300 : -300,
+                opacity: 1,
+                duration: duration,
+                ease: "none",
+                onComplete: () => { if(img.parentNode) img.remove(); }
+            });
+
+            // 2. 仿生垂直飄移 (非對稱震盪)
+            gsap.to(img, {
+                y: `+=${gsap.utils.random(-120, 120)}`,
+                duration: gsap.utils.random(4, 7),
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+
+            // 3. 仿生姿態：隨飛行上下輕微傾斜身體
+            gsap.to(img, {
+                rotation: dir === 'R' ? "+=20" : "-=20",
+                duration: gsap.utils.random(3, 5),
+                repeat: -1,
+                yoyo: true,
+                ease: "power1.inOut"
+            });
         }
+
         function scheduleButterflies() {
             setTimeout(() => {
                 spawnButterfly(Math.random() > 0.45 ? 'R' : 'L');
                 scheduleButterflies();
-            }, gsap.utils.random(6000, 11000));
+            }, gsap.utils.random(6000, 12000));
         }
 
         // --- 🔄 輪播系統 ---
@@ -139,9 +156,8 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // --- 📏 寬螢幕適配分頁 ---
         function processRawMessages(rawData) {
-            const MAX_CHARS = 150; // 加寬後單頁字數上修
+            const MAX_CHARS = 150; 
             let processed = [];
             rawData.forEach(item => {
                 const text = (item.祝福語 || item.msg || item.內容 || "").toString();
@@ -173,7 +189,7 @@
                         document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS`;
                     }
                 }
-            } catch (e) { console.log("Network sync..."); }
+            } catch (e) { console.log("Sync..."); }
         }
 
         function launch() {
