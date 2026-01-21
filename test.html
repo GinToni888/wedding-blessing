@@ -20,48 +20,38 @@
             font-family: "STFangsong", "NSimSun", "仿宋", serif;
         }
 
-        /* 1. 背景圖層 (png) */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
         }
 
-        /* 2. 蝴蝶圖層 (最高層級) */
         #butterfly-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 100; overflow: hidden;
         }
-        /* 蝴蝶基礎樣式：增加投影提升立體感 */
+
         .butterfly { 
-            position: absolute; 
-            will-change: transform; 
+            position: absolute; will-change: transform; 
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));
-            /* 預設隱藏，等 GSAP 就位再顯示，防止閃爍 */
             opacity: 0; 
         }
 
-        /* 3. 卡片容器 */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 10; perspective: 1200px;
         }
 
-        /* 4. 開場 Logo 層 */
         #opening-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 999; background: transparent; pointer-events: none;
         }
-        #main-logo {
-            width: 600px; max-width: 80vw;
-            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.1));
-        }
+        #main-logo { width: 600px; max-width: 80vw; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.1)); }
 
-        /* --- 卡片樣式與 CSS 動畫 (維持穩定不變) --- */
         .message-card {
-            position: relative; background: rgba(255, 255, 255, 0.95);
+            position: absolute; background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
             border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
             padding: 70px 90px; width: 850px; max-width: 85%; text-align: center;
@@ -72,7 +62,7 @@
             border: 1px solid rgba(125, 140, 120, 0.15); pointer-events: none;
         }
         .sender { font-size: 24px; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.2em; font-weight: bold; }
-        .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; }
+        .content { font-size: 34px; line-height: 1.8; color: var(--text-color); margin-bottom: 35px; word-break: keep-all; font-weight: 500; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
         @keyframes zoomIn { from { opacity: 0; transform: scale(0.8) translateZ(-200px); } to { opacity: 1; transform: scale(1) translateZ(0); } }
@@ -93,10 +83,10 @@
     </div>
 
     <div id="display-wrapper">
-        <div id="card-container"></div>
+        <div id="card-container" style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
     </div>
 
-    <div id="status-bar">Initializing Bio-System...</div>
+    <div id="status-bar">Syncing Data...</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
@@ -104,108 +94,66 @@
         let messages = [defaultMsg];
         let currentIndex = 0;
 
-        // --- 🦋 仿生蝴蝶系統 (Biomimetic Butterfly System) ---
-        // 重要：請務必確認 GitHub 上的檔名與這裡完全一致（包含大小寫）
-        const bfPool = {
-            L: ['bf_L1.gif', 'bf_L2.gif'], // 頭朝左的蝴蝶
-            R: ['bf_R1.gif', 'bf_R2.gif', 'bf_R3.gif'] // 頭朝右的蝴蝶
-        };
+        // --- 🦋 仿生蝴蝶系統 ---
+        const bfPool = { L: ['bf1_L.gif', 'bf2_L.gif'], R: ['bf1_R.gif', 'bf2_R.gif', 'bf3_R.gif'] };
 
         function spawnBiomimeticButterfly(dir) {
-            // 如果 GSAP 沒載入，就不生成蝴蝶，避免報錯
-            if (!window.gsap) return; 
-
+            if (!window.gsap) return;
             const container = document.getElementById('butterfly-layer');
             const img = document.createElement('img');
             const pool = dir === 'L' ? bfPool.L : bfPool.R;
             const src = pool[Math.floor(Math.random() * pool.length)];
             img.src = src;
             img.className = 'butterfly';
+            img.onerror = () => img.remove();
 
-            // 🚑 破圖救援機制：如果圖片載入失敗，立刻移除元素
-            img.onerror = () => {
-                console.warn(`Butterfly image failed to load: ${src}`);
-                img.remove();
-            };
-
-            // 仿生隨機參數
-            const startY = gsap.utils.random(10, 90); // 出生高度 (vh)
-            // 大小範圍變大：0.3(遠) ~ 1.0(近)
-            const scale = gsap.utils.random(0.3, 1.0); 
-            // 速度範圍變大：12秒(快) ~ 25秒(慢)
-            const duration = gsap.utils.random(12, 25); 
-            // 隨機上下飄移幅度
-            const wanderY = gsap.utils.random(50, 150); 
+            const startY = gsap.utils.random(10, 90);
+            const scale = gsap.utils.random(0.3, 1.0);
+            const duration = gsap.utils.random(12, 25);
+            const wanderY = gsap.utils.random(50, 150);
             
             container.appendChild(img);
-
-            // 設定初始狀態
-            gsap.set(img, {
-                x: dir === 'R' ? -200 : window.innerWidth + 200,
-                y: (window.innerHeight * startY / 100),
-                scale: scale,
-                opacity: 1, // 圖片載入後顯示
-                rotation: dir === 'R' ? 15 : -15 // 初始仰角
-            });
-
-            // 主要飛行軌跡 (X軸)
-            gsap.to(img, {
-                x: dir === 'R' ? window.innerWidth + 200 : -200,
-                duration: duration,
-                ease: "none",
-                onComplete: () => img.remove() // 飛出螢幕後移除
-            });
-
-            // 次要仿生動作：上下蜿蜒飄移 (Y軸)
-            gsap.to(img, {
-                y: `+=${dir === 'R' ? wanderY : -wanderY}`, // 隨機上下
-                duration: gsap.utils.random(3, 6),
-                repeat: -1,
-                yoyo: true,
-                ease: "sine.inOut" // 正弦波讓轉折更柔和
-            });
-
-            // 次要仿生動作：身體隨機搖擺 (Rotation)
-            gsap.to(img, {
-                rotation: dir === 'R' ? -5 : 5,
-                duration: gsap.utils.random(1.5, 3),
-                repeat: -1,
-                yoyo: true,
-                ease: "sine.inOut"
-            });
+            gsap.set(img, { x: dir === 'R' ? -200 : window.innerWidth + 200, y: (window.innerHeight * startY / 100), scale: scale, opacity: 1, rotation: dir === 'R' ? 15 : -15 });
+            gsap.to(img, { x: dir === 'R' ? window.innerWidth + 200 : -200, duration: duration, ease: "none", onComplete: () => img.remove() });
+            gsap.to(img, { y: `+=${dir === 'R' ? wanderY : -wanderY}`, duration: gsap.utils.random(3, 6), repeat: -1, yoyo: true, ease: "sine.inOut" });
         }
 
-        // 隨機生成排程器 (取代死板的 setInterval)
         function scheduleNextButterfly() {
-            const nextSpawnTime = gsap.utils.random(800, 4000); // 下一隻出現在 0.8 ~ 4 秒後
             setTimeout(() => {
-                // 隨機決定方向，保持約 2:3 的比例傾向
-                const dir = Math.random() > 0.4 ? 'R' : 'L';
-                spawnBiomimeticButterfly(dir);
-                // 遞迴呼叫，繼續排程下一隻
+                spawnBiomimeticButterfly(Math.random() > 0.4 ? 'R' : 'L');
                 scheduleNextButterfly();
-            }, nextSpawnTime);
+            }, gsap.utils.random(800, 4000));
         }
 
-        // --- 核心系統 (卡片與資料) ---
+        // --- 核心輪播邏輯 (Chrome 層疊修復版) ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            const oldCard = container.querySelector('.message-card');
-            if (oldCard) {
-                oldCard.className = 'message-card card-exit';
-                setTimeout(() => oldCard.remove(), 2100);
-            }
+            
+            // 1. 強力清理：找出所有現有的卡片並強制執行退場
+            const allOldCards = container.querySelectorAll('.message-card');
+            allOldCards.forEach(card => {
+                card.classList.remove('card-enter'); // 移除進場動畫
+                card.classList.add('card-exit');    // 加上退場動畫
+                // 確保 2.5 秒後徹底從 DOM 移除
+                setTimeout(() => { if(card.parentNode) card.remove(); }, 2500);
+            });
+
+            // 2. 準備新資料
             if (messages.length === 0) messages = [defaultMsg];
             const data = messages[currentIndex];
-            const newCard = document.createElement('div');
-            newCard.className = 'message-card card-enter';
-            newCard.innerHTML = `
-                <div class="sender">— ${data.name} —</div>
-                <div class="content">${(data.msg || data.content || "新婚快樂").replace(/\n/g, '<br>')}</div>
-                <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
-            `;
-            container.appendChild(newCard);
-            currentIndex = (currentIndex + 1) % messages.length;
+            
+            // 3. 延遲 100ms 再加入新卡片，給瀏覽器一點喘息時間處理 DOM 變化
+            setTimeout(() => {
+                const newCard = document.createElement('div');
+                newCard.className = 'message-card card-enter';
+                newCard.innerHTML = `
+                    <div class="sender">— ${data.name} —</div>
+                    <div class="content">${(data.msg || data.content || "新婚快樂").replace(/\n/g, '<br>')}</div>
+                    <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental</div>
+                `;
+                container.appendChild(newCard);
+                currentIndex = (currentIndex + 1) % messages.length;
+            }, 100);
         }
 
         async function fetchMessages() {
@@ -217,32 +165,30 @@
                     const filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
                     if (filtered.length > 0) messages = filtered;
                 }
-                document.getElementById('status-bar').innerText = `System Active. Messages: ${messages.length}`;
+                document.getElementById('status-bar').innerText = `Active. Messages: ${messages.length}`;
             } catch (e) { console.log("Sync skipped"); }
         }
 
         function init() {
             fetchMessages();
-            // 使用 CSS 動畫控制 Logo 淡出
-            document.getElementById('main-logo').style.animation = "logoFadeOut 2s ease-in forwards 3s";
+            // Logo 動態
+            const logo = document.getElementById('main-logo');
+            gsap.to(logo, { scale: 1.05, duration: 3, repeat: -1, yoyo: true, ease: "sine.inOut" });
+            
             setTimeout(() => {
-                document.getElementById('opening-overlay').style.display = 'none';
-                rotateMessage();
-                setInterval(rotateMessage, 11000); 
-                setInterval(fetchMessages, 45000);
-                // 啟動仿生蝴蝶系統
-                scheduleNextButterfly();
-            }, 5000);
+                gsap.to("#opening-overlay", { 
+                    opacity: 0, 
+                    duration: 2, 
+                    onComplete: () => {
+                        document.getElementById('opening-overlay').style.display = 'none';
+                        rotateMessage();
+                        setInterval(rotateMessage, 11000); 
+                        setInterval(fetchMessages, 45000);
+                        scheduleNextButterfly();
+                    }
+                });
+            }, 4000);
         }
-        
-        // CSS Keyframes for Logo (補回遺漏的)
-        const style = document.createElement('style');
-        style.innerHTML = `
-            @keyframes logoFadeOut { to { opacity: 0; visibility: hidden; } }
-            @keyframes logoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        `;
-        document.head.appendChild(style);
-        document.getElementById('main-logo').style.animation = "logoPulse 4s ease-in-out infinite";
 
         window.onload = init;
 
