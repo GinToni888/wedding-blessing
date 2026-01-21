@@ -10,14 +10,7 @@
         :root { --cream-bg: #fdfaf5; --sage-green: #7d8c78; --gold: #c5a059; --text-color: #4a4a4a; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        /* 解決黑色背景問題：確保 body 有底色支撐去背圖 */
-        body, html { 
-            width: 100vw; height: 100vh; 
-            overflow: hidden; 
-            background-color: var(--cream-bg); 
-            font-family: "Playfair Display", "STFangsong", "NSimSun", serif; 
-        }
-
+       
         /* 背景層：雙層霧化 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
         #bg-blurred { 
