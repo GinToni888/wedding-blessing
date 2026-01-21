@@ -39,7 +39,7 @@
         .content { font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; font-weight: 500; word-wrap: break-word; white-space: pre-wrap; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 3. 🌸 儀式花牆 */
+        /* 3. 🌸 儀式花牆 (去背透明) */
         #ceremony-overlay {
             position: fixed; top: -110%; left: 0; width: 100vw; height: 100vh;
             z-index: 2000;
@@ -105,46 +105,42 @@
             gsap.timeline({ onComplete: () => img.remove() }).to(img, { opacity: 1, duration: 2 }).to(img, { x: (dir === 'toRight' ? window.innerWidth + 300 : -300), duration: 22, ease: "none" });
         }
 
-        // --- 🌸 儀式花牆 (250 朵修正版) ---
+        // --- 🌸 儀式花牆 (500 朵修正版) ---
         let placedFlowers = [];
         function initCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
             const files = ['flower1.gif', 'flower2.gif', 'flower3.gif'];
-            // 總數 250 朵：150 (60%), 88 (35%), 12 (5%)
-            const zones = [{c:150,y1:2,y2:33},{c:88,y1:34,y2:65},{c:12,y1:66,y2:92}];
+            // 總數 500 朵比例：300 (60%), 175 (35%), 25 (5%)
+            const zones = [{c:300,y1:2,y2:33},{c:175,y1:34,y2:65},{c:25,y1:66,y2:92}];
             
             zones.forEach(z => {
                 for (let i = 0; i < z.c; i++) {
                     const ch = Math.random();
-                    // Flower 1 (70%): 110px | Flower 2/3 (30%): 60px
-                    let s = ch < 0.7 ? 110 : 60, f = ch < 0.7 ? files[0] : (ch < 0.85 ? files[1] : files[2]);
+                    // Flower 1 (70%): 100px | Flower 2/3 (30%): 55px
+                    let s = ch < 0.7 ? 100 : 55, f = ch < 0.7 ? files[0] : (ch < 0.85 ? files[1] : files[2]);
                     let x, y, found = false;
                     
-                    // 增加嘗試次數以應對高密度
-                    for (let att = 0; att < 150; att++) {
-                        x = gsap.utils.random(3, 94); y = gsap.utils.random(z.y1, z.y2);
+                    for (let att = 0; att < 180; att++) {
+                        x = gsap.utils.random(2, 96); y = gsap.utils.random(z.y1, z.y2);
                         const pxX = (window.innerWidth * x) / 100, pxY = (window.innerHeight * y) / 100;
                         
-                        // 碰撞偵測緩衝設為 5px
-                        const ov = placedFlowers.some(fl => Math.sqrt(Math.pow(pxX-fl.x,2)+Math.pow(pxY-fl.y,2)) < (s/2+fl.s/2+5));
+                        // 高密度下碰撞緩衝設為 2px
+                        const ov = placedFlowers.some(fl => Math.sqrt(Math.pow(pxX-fl.x,2)+Math.pow(pxY-fl.y,2)) < (s/2+fl.s/2+2));
                         
                         if (!ov) {
                             placedFlowers.push({x:pxX, y:pxY, s:s});
                             const fEl = document.createElement('div');
                             fEl.className = 'flower-item';
                             fEl.style.cssText = `left:${x}%;top:${y}%;width:${s}px;height:${s}px;background-image:url('${f}');`;
-                            
-                            // 視覺濾鏡
                             if (ch < 0.7) fEl.style.filter = 'brightness(1.05)'; 
                             else fEl.style.filter = 'opacity(0.8)';
-                            
                             overlay.appendChild(fEl);
                             found = true; break;
                         }
                     }
                 }
             });
-            console.log(`Initialized ${placedFlowers.length} flowers (250 Target).`);
+            console.log(`Initialized ${placedFlowers.length} flowers (500 Target).`);
         }
 
         function toggleCeremony() {
@@ -152,14 +148,15 @@
             const flowers = document.querySelectorAll('.flower-item');
             if (!isCeremonyActive) {
                 gsap.to(overlay, { top: 0, duration: 1.8, ease: "power4.inOut" });
+                // --- 調整綻放時間至 10 秒 ---
                 gsap.to(flowers, { 
-                    scale: 1, duration: 1, delay: 1.2, 
-                    stagger: { amount: 3, from: "random" }, 
-                    ease: "back.out(1.5)" 
+                    scale: 1, duration: 1.2, delay: 1.2, 
+                    stagger: { amount: 10, from: "random" }, 
+                    ease: "back.out(1.2)" 
                 });
                 isCeremonyActive = true;
             } else {
-                gsap.to(flowers, { scale: 0, duration: 0.6 });
+                gsap.to(flowers, { scale: 0, duration: 0.8 });
                 gsap.to(overlay, { top: "-110%", duration: 1.5, delay: 0.3, ease: "power4.inOut" });
                 isCeremonyActive = false;
             }
@@ -170,7 +167,8 @@
             if (isCeremonyActive) return;
             const container = document.getElementById('card-container');
             const data = (initialLocalPhase) ? localMsgs[currentIndex] : messages[currentIndex];
-            
+            if (!data) return;
+
             container.innerHTML = `<div class="message-card"><div class="sender">— ${data.displayName || data.name} —</div><div class="content">${(data.displayMsg || data.msg).replace(/\n/g, '<br>')}</div><div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div></div>`;
             
             if (initialLocalPhase && currentIndex === localMsgs.length - 1) {
@@ -217,7 +215,7 @@
             initCeremony(); 
             rotateMessage(); 
             setInterval(rotateMessage, 12000);
-            setInterval(spawnButterfly, 14000);
+            setInterval(spawnButterfly, 15000);
             fetchMessages(); 
             setInterval(fetchMessages, 60000);
         };
