@@ -10,19 +10,16 @@
         :root { --cream-bg: #fdfaf5; --sage-green: #7d8c78; --gold: #c5a059; --text-color: #4a4a4a; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        /* 1. 強制修正字體遺失問題 */
         body, html { 
             width: 100vw; height: 100vh; 
             overflow: hidden; 
             background-color: var(--cream-bg); 
-            /* 預設字體順序 */
             font-family: "Playfair Display", "STFangsong", "華康儷中宋", "NSimSun", serif; 
         }
 
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
         #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; will-change: opacity; }
         
-        /* 1050px 大氣卡片 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 10; perspective: 1800px; }
         
         .message-card { 
@@ -31,7 +28,6 @@
             padding: 80px 110px; width: 1050px; text-align: center; 
             box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; 
             animation: cardEnter 2.5s forwards; 
-            /* 再次確保內部字體 */
             font-family: "STFangsong", "NSimSun", serif; 
         }
 
@@ -39,7 +35,6 @@
         .content { font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; font-weight: 500; word-wrap: break-word; white-space: pre-wrap; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* --- 🌸 儀式花牆層 --- */
         #ceremony-overlay {
             position: fixed; top: -110%; left: 0; width: 100vw; height: 100vh;
             z-index: 2000; background-color: #2d3e2d;
@@ -50,14 +45,11 @@
         .flower-item {
             position: absolute; 
             background-size: contain; background-repeat: no-repeat; background-position: center;
-            /* 徹底移除所有邊框與虛線 */
-            border: none !important; 
-            outline: none !important;
+            border: none !important; outline: none !important;
             transform: scale(0); will-change: transform;
         }
 
         @keyframes cardEnter { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(255,255,255,0.5); z-index: 3000; }
     </style>
 </head>
 <body>
@@ -67,36 +59,33 @@
     <div id="display-wrapper"><div id="card-container"></div></div>
     
     <div id="ceremony-overlay"></div>
-    <div id="status-bar">CEREMONY READY - NO-OVERLAP MODE</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         let isCeremonyActive = false;
         let messages = [{ name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！" }];
-        let placedFlowers = []; // 用於記錄已放置花朵的位置
+        let placedFlowers = []; 
 
-        // --- 🌸 碰撞檢測函式 ---
         function isOverlapping(newX, newY, newSize) {
             for (let flower of placedFlowers) {
                 const dx = newX - flower.x;
                 const dy = newY - flower.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                // 如果兩花中心距離小於它們半徑之和 (加一點緩衝 20px)，視為重疊
-                if (distance < (newSize/2 + flower.size/2 + 20)) return true;
+                // 減小緩衝距離到 10px 以容納 100 朵花
+                if (distance < (newSize/2 + flower.size/2 + 10)) return true;
             }
             return false;
         }
 
-        // --- 🌸 儀式初始化 (防重疊 + 比例分佈) ---
         function initCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
             const flowerFiles = ['flower1.gif', 'flower2.gif', 'flower3.gif'];
             
-            // 定義區域設定 [區域號, 數量, Y範圍最小值, Y範圍最大值]
+            // --- 總數 100 朵：60, 35, 5 分佈 ---
             const zoneSettings = [
-                { id: 1, count: 30, yMin: 2, yMax: 30 }, // 區域 1: 60%
-                { id: 2, count: 18, yMin: 35, yMax: 63 }, // 區域 2: 35%
-                { id: 3, count: 2,  yMin: 68, yMax: 90 }  // 區域 3: 5%
+                { id: 1, count: 60, yMin: 2, yMax: 32 }, 
+                { id: 2, count: 35, yMin: 35, yMax: 65 }, 
+                { id: 3, count: 5,  yMin: 68, yMax: 92 }  
             ];
 
             zoneSettings.forEach(zone => {
@@ -104,23 +93,22 @@
                     const f = document.createElement('div');
                     f.className = 'flower-item';
                     
-                    // 決定種類與尺寸
                     const chance = Math.random();
                     let size, file;
-                    if (chance < 0.5) {
-                        file = flowerFiles[0]; size = 150; // Flower 1
+
+                    // --- Flower 1 佔 70% 比例 ---
+                    if (chance < 0.7) { 
+                        file = flowerFiles[0]; size = 150; 
                     } else {
-                        file = (chance < 0.75 ? flowerFiles[1] : flowerFiles[2]); 
-                        size = 100; // Flower 2 & 3 縮小為 100px
+                        file = (chance < 0.85 ? flowerFiles[1] : flowerFiles[2]); 
+                        size = 100; // Flower 2 & 3 固定 100px
                     }
 
-                    // 尋找不重疊的位置 (最多嘗試 50 次)
                     let x, y, found = false;
-                    for (let attempt = 0; attempt < 50; attempt++) {
-                        x = gsap.utils.random(5, 90); // X 軸百分比
-                        y = gsap.utils.random(zone.yMin, zone.yMax); // Y 軸百分比
-                        
-                        // 轉換為像素座標進行精確計算
+                    // 增加嘗試次數到 100 次，確保高密度下仍能放置
+                    for (let attempt = 0; attempt < 100; attempt++) {
+                        x = gsap.utils.random(5, 92);
+                        y = gsap.utils.random(zone.yMin, zone.yMax);
                         const pxX = (window.innerWidth * x) / 100;
                         const pxY = (window.innerHeight * y) / 100;
 
@@ -141,6 +129,7 @@
                     }
                 }
             });
+            console.log(`Initialized ${placedFlowers.length} flowers.`);
         }
 
         function toggleCeremony() {
@@ -150,7 +139,7 @@
                 gsap.to(overlay, { top: 0, duration: 1.8, ease: "power4.inOut" });
                 gsap.to(flowers, { 
                     scale: 1, duration: 1.2, delay: 1.4,
-                    stagger: { amount: 1.5, from: "random" },
+                    stagger: { amount: 1.8, from: "random" },
                     ease: "back.out(1.5)"
                 });
                 isCeremonyActive = true;
@@ -167,7 +156,6 @@
             const container = document.getElementById('card-container');
             container.innerHTML = `<div class="message-card"><div class="sender">— Maggie & Stanley —</div><div class="content">Wedding Ceremony Testing<br>Ready to Bloom</div></div>`;
             
-            // 嘗試抓取遠端資料
             fetch(gasUrl).then(res => res.json()).then(data => {
                 if(data.length > 0) messages = data.map(d => ({ name: d.賓客姓名 || d.name, msg: d.祝福語 || d.msg }));
                 rotateMessage();
