@@ -11,33 +11,23 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--cream-bg); font-family: "STFangsong", "NSimSun", serif; }
 
-        /* 背景層 */
+        /* 1. 背景層 */
         #master-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('wedding-bg.png') no-repeat center center;
             background-size: cover; z-index: 1;
         }
 
-        /* 蝴蝶層 (z-index 100) - 調整為精緻小尺寸 */
-        #butterfly-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 100; overflow: hidden;
-        }
-        .butterfly { 
-            position: absolute; will-change: transform; 
-            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0;
-        }
-
-        /* 開場 Logo 層 (z-index 999) */
+        /* 2. 開場 Logo 層 (z-index 999) */
         #opening-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             z-index: 999; background: transparent; pointer-events: none;
-            transition: opacity 3s ease-in-out;
+            transition: opacity 3.5s ease-in-out; /* 3.5秒優雅淡出 */
         }
         #main-logo { width: 600px; max-width: 80vw; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.15)); }
 
-        /* 卡片容器 (z-index 10) */
+        /* 3. 卡片容器 (z-index 10) */
         #display-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
@@ -49,7 +39,7 @@
             border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
             padding: 70px 90px; width: 850px; max-width: 85%; text-align: center;
             box-shadow: 0 25px 60px rgba(0,0,0,0.06); border-radius: 4px;
-            /* 修正動畫：確保最終狀態是 scale(1) */
+            /* 修正動畫：確保最終狀態是 scale(1)，解決卡片變小問題 */
             animation: cardEnter 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .message-card::before {
@@ -71,11 +61,10 @@
 <body>
 
     <div id="master-bg"></div>
-    <div id="butterfly-layer"></div>
     <div id="opening-overlay"><img src="logo.png" id="main-logo" alt="Logo"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="status-bar">SYSTEM ACTIVE</div>
+    <div id="status-bar">SYSTEM READY</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
@@ -84,40 +73,12 @@
         let messages = [defaultMsg];
         let currentIndex = 0;
 
-        // --- 🦋 精緻蝴蝶系統 (尺寸縮小、頻率降低) ---
-        const bfPool = { L: ['bf_L1.gif', 'bf_L2.gif'], R: ['bf_R1.gif', 'bf_R2.gif', 'bf_R3.gif'] };
-
-        function spawnButterfly(dir) {
-            const container = document.getElementById('butterfly-layer');
-            if (container.children.length > 3) return; // 場上不超過3隻，保持精緻感
-
-            const img = document.createElement('img');
-            const pool = dir === 'L' ? bfPool.left || bfPool.L : bfPool.right || bfPool.R;
-            img.src = pool[Math.floor(Math.random() * pool.length)];
-            img.className = 'butterfly';
-            img.onerror = () => img.remove();
-
-            const scale = gsap.utils.random(0.15, 0.3); // 縮小蝴蝶尺寸
-            const startY = gsap.utils.random(15, 80);
-            const duration = gsap.utils.random(25, 40);
-
-            container.appendChild(img);
-            gsap.set(img, { x: dir === 'R' ? -200 : window.innerWidth + 200, y: (window.innerHeight * startY / 100), scale: scale, opacity: 1 });
-            gsap.to(img, { x: dir === 'R' ? window.innerWidth + 200 : -200, duration: duration, ease: "none", onComplete: () => img.remove() });
-            gsap.to(img, { y: `+=${gsap.utils.random(-120, 120)}`, duration: gsap.utils.random(5, 8), repeat: -1, yoyo: true, ease: "sine.inOut" });
-        }
-
-        function scheduleButterflies() {
-            setTimeout(() => {
-                spawnButterfly(Math.random() > 0.4 ? 'R' : 'L');
-                scheduleButterflies();
-            }, gsap.utils.random(8000, 15000)); // 8-15秒才出一隻
-        }
-
-        // --- 🔄 輪播系統 (暴力清理防疊加) ---
+        // --- 🔄 輪播系統：強制清理防止 Chrome 層疊 ---
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            container.innerHTML = ''; // 強制清空，防止 Chrome 疊加 Bug
+            
+            // 暴力清理法：在加入新卡片前，直接抹除容器內所有內容
+            container.innerHTML = ''; 
 
             const data = (messages && messages.length > 0) ? messages[currentIndex] : defaultMsg;
             const text = (data.msg || data.content || data.內容 || "Happy Wedding!").replace(/\n/g, '<br>');
@@ -133,7 +94,7 @@
             currentIndex = (currentIndex + 1) % messages.length;
         }
 
-        // --- ☁️ 非同步抓取 (絕不阻塞) ---
+        // --- ☁️ 非同步資料同步 (不阻塞 UI) ---
         async function fetchMessages() {
             try {
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
@@ -143,30 +104,33 @@
                     if (filtered.length > 0) messages = filtered;
                 }
                 document.getElementById('status-bar').innerText = `SYNC SUCCESS: ${messages.length} MSGS`;
-            } catch (e) { console.log("Background sync paused..."); }
+            } catch (e) { 
+                console.log("Background sync paused..."); 
+                document.getElementById('status-bar').innerText = "SYNC PENDING...";
+            }
         }
 
-        // --- 🚀 啟動流程 (時間鎖定) ---
+        // --- 🚀 啟動邏輯 (時間鎖定) ---
         function launch() {
-            // 背景同步資料，不使用 await，確保 UI 繼續執行
+            // 背景抓資料，不使用 await，保證 Logo 動畫立刻執行
             fetchMessages(); 
 
             // Logo 呼吸動態
             gsap.to("#main-logo", { scale: 1.05, duration: 4, repeat: -1, yoyo: true, ease: "sine.inOut" });
 
-            // 強制時間序列：不管資料有沒有抓到，Logo 6 秒後一定開始淡出
+            // 強制時間序列：Logo 展示 7 秒後淡出
             setTimeout(() => {
                 const overlay = document.getElementById('opening-overlay');
                 overlay.style.opacity = 0; 
                 
+                // 淡出過渡完成後，啟動卡片輪播
                 setTimeout(() => {
                     overlay.style.display = 'none';
-                    rotateMessage(); // 啟動第一張卡片
+                    rotateMessage(); 
                     setInterval(rotateMessage, 12000); 
-                    scheduleButterflies(); // 啟動蝴蝶
-                    setInterval(fetchMessages, 45000); // 定時背景同步
-                }, 3000); 
-            }, 6000); 
+                    setInterval(fetchMessages, 45000); // 45秒背景同步一次
+                }, 3500); // 與 CSS transition 3.5s 對應
+            }, 7000); // Logo 停留 7 秒
         }
 
         window.onload = launch;
