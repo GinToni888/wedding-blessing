@@ -47,6 +47,8 @@
             background-size: contain; background-repeat: no-repeat; background-position: center;
             border: none !important; outline: none !important;
             transform: scale(0); will-change: transform;
+            /* 確保濾鏡效果平滑過渡 */
+            transition: filter 0.3s ease; 
         }
 
         @keyframes cardEnter { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -71,8 +73,7 @@
                 const dx = newX - flower.x;
                 const dy = newY - flower.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                // 減小緩衝距離到 10px 以容納 100 朵花
-                if (distance < (newSize/2 + flower.size/2 + 10)) return true;
+                if (distance < (newSize/2 + flower.size/2 + 5)) return true;
             }
             return false;
         }
@@ -81,11 +82,10 @@
             const overlay = document.getElementById('ceremony-overlay');
             const flowerFiles = ['flower1.gif', 'flower2.gif', 'flower3.gif'];
             
-            // --- 總數 100 朵：60, 35, 5 分佈 ---
             const zoneSettings = [
-                { id: 1, count: 60, yMin: 2, yMax: 32 }, 
-                { id: 2, count: 35, yMin: 35, yMax: 65 }, 
-                { id: 3, count: 5,  yMin: 68, yMax: 92 }  
+                { id: 1, count: 120, yMin: 2, yMax: 33 }, 
+                { id: 2, count: 70,  yMin: 34, yMax: 65 }, 
+                { id: 3, count: 10,  yMin: 66, yMax: 92 }  
             ];
 
             zoneSettings.forEach(zone => {
@@ -96,18 +96,23 @@
                     const chance = Math.random();
                     let size, file;
 
-                    // --- Flower 1 佔 70% 比例 ---
+                    // --- 視覺調整核心區塊 ---
                     if (chance < 0.7) { 
-                        file = flowerFiles[0]; size = 150; 
+                        // Flower 1 (70%): 尺寸 110px, 亮度提高 5%
+                        file = flowerFiles[0]; 
+                        size = 110; 
+                        f.style.filter = 'brightness(1.05)';
                     } else {
+                        // Flower 2 & 3 (30%): 尺寸 60px, 透明度降低 20% (即 80%)
                         file = (chance < 0.85 ? flowerFiles[1] : flowerFiles[2]); 
-                        size = 100; // Flower 2 & 3 固定 100px
+                        size = 60; 
+                        f.style.filter = 'opacity(0.8)';
                     }
+                    // ------------------------
 
                     let x, y, found = false;
-                    // 增加嘗試次數到 100 次，確保高密度下仍能放置
-                    for (let attempt = 0; attempt < 100; attempt++) {
-                        x = gsap.utils.random(5, 92);
+                    for (let attempt = 0; attempt < 120; attempt++) {
+                        x = gsap.utils.random(3, 94);
                         y = gsap.utils.random(zone.yMin, zone.yMax);
                         const pxX = (window.innerWidth * x) / 100;
                         const pxY = (window.innerHeight * y) / 100;
@@ -129,7 +134,7 @@
                     }
                 }
             });
-            console.log(`Initialized ${placedFlowers.length} flowers.`);
+            console.log(`Initialized ${placedFlowers.length} flowers with visual effects.`);
         }
 
         function toggleCeremony() {
@@ -138,8 +143,8 @@
             if (!isCeremonyActive) {
                 gsap.to(overlay, { top: 0, duration: 1.8, ease: "power4.inOut" });
                 gsap.to(flowers, { 
-                    scale: 1, duration: 1.2, delay: 1.4,
-                    stagger: { amount: 1.8, from: "random" },
+                    scale: 1, duration: 1.0, delay: 1.2,
+                    stagger: { amount: 2.5, from: "random" },
                     ease: "back.out(1.5)"
                 });
                 isCeremonyActive = true;
@@ -154,7 +159,7 @@
             document.getElementById('bg-blurred').classList.add('is-clear');
             initCeremony();
             const container = document.getElementById('card-container');
-            container.innerHTML = `<div class="message-card"><div class="sender">— Maggie & Stanley —</div><div class="content">Wedding Ceremony Testing<br>Ready to Bloom</div></div>`;
+            container.innerHTML = `<div class="message-card"><div class="sender">— Maggie & Stanley —</div><div class="content">Wedding Ceremony Testing<br>Visual Depth Enhanced</div></div>`;
             
             fetch(gasUrl).then(res => res.json()).then(data => {
                 if(data.length > 0) messages = data.map(d => ({ name: d.賓客姓名 || d.name, msg: d.祝福語 || d.msg }));
