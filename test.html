@@ -17,9 +17,9 @@
         .is-clear { opacity: 0; }
 
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
-        .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.12)); opacity: 0; }
+        .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* 卡片容器：1050px 大氣比例 */
+        /* 1050px 大氣卡片 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 10; perspective: 1800px; }
         .message-card {
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5);
@@ -44,7 +44,7 @@
     <div id="butterfly-layer"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
     
-    <div id="status-bar">SYSTEM ACTIVE - BIONIC PAUSE</div>
+    <div id="status-bar">ZONE-WEIGHTED SYSTEM ACTIVE</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
@@ -57,64 +57,88 @@
         let messages = [];
         let currentIndex = 0;
 
-        const bfPool = { L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], R: ['bf1_R.gif', 'bf2_R.gif'] };
+        const bfPool = { 
+            L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], 
+            R: ['bf1_R.gif', 'bf2_R.gif'] 
+        };
 
-        // --- 🦋 仿生停頓飛行系統 ---
+        // --- 🦋 權重區域計算器 ---
+        function getRandomZoneY() {
+            const dice = Math.random() * 100;
+            let targetZone;
+            
+            if (dice < 70) {
+                // 70% 落在區域 1, 2, 4
+                const highWeightZones = [1, 2, 4];
+                targetZone = highWeightZones[Math.floor(Math.random() * highWeightZones.length)];
+            } else {
+                // 30% 落在區域 3, 5
+                const lowWeightZones = [3, 5];
+                targetZone = lowWeightZones[Math.floor(Math.random() * lowWeightZones.length)];
+            }
+
+            // 每個區域高度為 20%
+            const minPercent = (targetZone - 1) * 20;
+            const maxPercent = targetZone * 20;
+            const randomPercent = gsap.utils.random(minPercent, maxPercent);
+            
+            return (window.innerHeight * randomPercent) / 100;
+        }
+
+        // --- 🦋 仿生鏡像翻轉與分佈系統 ---
         function spawnButterfly() {
             const container = document.getElementById('butterfly-layer');
-            if (container.children.length > 5) return; 
+            if (container.children.length > 6) return; // 稍微放寬數量至 6 隻
 
-            const direction = Math.random() > 0.5 ? 'toLeft' : 'toRight';
             const img = document.createElement('img');
-            const pool = direction === 'toLeft' ? bfPool.L : bfPool.R;
+            const isLType = Math.random() > 0.5;
+            const pool = isLType ? bfPool.L : bfPool.R;
             img.src = pool[Math.floor(Math.random() * pool.length)];
             img.className = 'butterfly';
-            img.onerror = () => img.remove();
-
-            const scale = gsap.utils.random(0.18, 0.38);
-            const startY = gsap.utils.random(window.innerHeight * 0.1, window.innerHeight * 0.55);
-            container.appendChild(img);
-
-            let startX = (direction === 'toRight') ? -200 : window.innerWidth + 200;
-            let endX = (direction === 'toRight') ? window.innerWidth + 200 : -200;
             
-            // 隨機停頓點 (在畫面中間區域)
-            let pauseX = window.innerWidth * gsap.utils.random(0.3, 0.7);
-            let pauseY = startY + gsap.utils.random(-50, 50);
+            const baseScale = gsap.utils.random(0.18, 0.38);
+            const startX = isLType ? window.innerWidth + 200 : -200;
+            const startY = getRandomZoneY(); // 使用權重區域高度
 
-            // 使用 Timeline 建立「飛->停->飛」的節奏
-            const tl = gsap.timeline({
-                onComplete: () => { if(img.parentNode) img.remove(); }
-            });
+            container.appendChild(img);
+            gsap.set(img, { x: startX, y: startY, scale: baseScale, opacity: 0 });
 
-            gsap.set(img, { x: startX, y: startY, scale: scale, opacity: 0 });
+            const tl = gsap.timeline({ onComplete: () => { if(img.parentNode) img.remove(); } });
 
-            // 1. 飛入並淡入
-            tl.to(img, { opacity: 1, duration: 1.5 }, 0)
-              .to(img, { 
-                  x: pauseX, 
-                  y: pauseY, 
-                  duration: gsap.utils.random(8, 12), 
-                  ease: "power1.inOut" 
-              }, 0);
+            tl.to(img, { opacity: 1, duration: 1.5 });
 
-            // 2. 在中間停頓 (Pause)
-            // 停頓期間蝴蝶依然會有極微小的上下擺動 (透過下面的獨立動畫)
-            tl.to({}, { duration: gsap.utils.random(2, 4) }); 
+            // 折返邏輯
+            const uTurns = gsap.utils.random(2, 3, 1);
+            let lastX = startX;
 
-            // 3. 再次啟動並飛離
-            tl.to(img, { 
-                x: endX, 
-                y: pauseY + gsap.utils.random(-100, 100), 
-                duration: gsap.utils.random(10, 15), 
-                ease: "power1.in" 
-            });
+            for (let i = 0; i < uTurns; i++) {
+                const targetX = gsap.utils.random(window.innerWidth * 0.15, window.innerWidth * 0.85);
+                const targetY = getRandomZoneY(); // 飛行過程中也保持權重比例
+                const duration = gsap.utils.random(6, 9);
 
-            // 獨立的「仿生顫動」動畫 (不管是飛還是停都在動)
+                const movingLeft = targetX < lastX;
+                let scaleXValue = isLType ? (movingLeft ? baseScale : -baseScale) : (movingLeft ? -baseScale : baseScale);
+
+                tl.to(img, { scaleX: scaleXValue, duration: 0.3 }, "-=0.2");
+                tl.to(img, { x: targetX, y: targetY, duration: duration, ease: "sine.inOut" }, "<");
+
+                if (Math.random() > 0.4) {
+                    tl.to({}, { duration: gsap.utils.random(1.5, 3) });
+                }
+                lastX = targetX;
+            }
+
+            const finalX = Math.random() > 0.5 ? -300 : window.innerWidth + 300;
+            const movingLeftFinal = finalX < lastX;
+            const finalScaleX = isLType ? (movingLeftFinal ? baseScale : -baseScale) : (movingLeftFinal ? -baseScale : baseScale);
+            
+            tl.to(img, { scaleX: finalScaleX, duration: 0.3 });
+            tl.to(img, { x: finalX, y: getRandomZoneY(), duration: 8, ease: "power1.in" });
+
             gsap.to(img, {
                 y: `+=${gsap.utils.random(-30, 30)}`,
                 rotation: gsap.utils.random(-10, 10),
-                duration: gsap.utils.random(2, 4),
+                duration: gsap.utils.random(3, 5),
                 repeat: -1,
                 yoyo: true,
                 ease: "sine.inOut"
@@ -125,7 +149,7 @@
             setTimeout(() => {
                 spawnButterfly();
                 scheduleButterflies();
-            }, gsap.utils.random(5000, 10000));
+            }, gsap.utils.random(4000, 8000));
         }
 
         function rotateMessage() {
