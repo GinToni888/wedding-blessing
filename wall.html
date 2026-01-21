@@ -186,4 +186,50 @@
 
             let processedLocal = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
             let mixed = [];
-            let local
+            let localCounter = 0;
+
+            for (let i = 0; i < processedRemote.length; i++) {
+                mixed.push(processedRemote[i]);
+                if ((i + 1) % 15 === 0) {
+                    mixed.push(processedLocal[localCounter % processedLocal.length]);
+                    localCounter++;
+                }
+            }
+            if (processedRemote.length > 0 && processedRemote.length % 15 !== 0) {
+                mixed.push(processedLocal[localCounter % processedLocal.length]);
+            }
+            return mixed.length > 0 ? mixed : processedLocal;
+        }
+
+        async function fetchMessages() {
+            try {
+                const res = await fetch(`${gasUrl}?t=${Date.now()}`);
+                const rawData = await res.json();
+                if (Array.isArray(rawData) && rawData.length > 0) {
+                    let filtered = rawData.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
+                    const finalData = filtered.length > 0 ? filtered : rawData.filter(item => (item.祝福語 || item.msg || item.內容));
+                    if (finalData.length > 0) {
+                        messages = processAndMixMessages(finalData);
+                        document.getElementById('status-bar').innerText = `SYNCED: ${messages.length} MSGS (MINIMALIST)`;
+                    }
+                }
+            } catch (e) { console.log("Syncing..."); }
+        }
+
+        function launch() {
+            document.getElementById('bg-blurred').classList.add('is-clear');
+            messages = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
+            rotateMessage();
+            setInterval(rotateMessage, 12000);
+            scheduleButterflies();
+            fetchMessages(); 
+            setInterval(fetchMessages, 45000);
+        }
+
+        window.onload = launch;
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#ffc0cb', '#fff0f5', '#fdf5e6'] });
+        });
+    </script>
+</body>
+</html>
