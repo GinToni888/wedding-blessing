@@ -97,11 +97,13 @@
             img.className = 'butterfly';
             img.onerror = () => img.remove();
 
-            // 隨機參數：尺寸強制 0.15 ~ 0.45 (符合 0.5 以下要求)
+            // 調整：將出生高度限制在上方 15% 到 55% 之間 (確保在上方 2/3)
+            const startY = gsap.utils.random(15, 55); 
+            // 比例調整：0.15 ~ 0.45
             const scale = gsap.utils.random(0.15, 0.45); 
-            const startY = gsap.utils.random(10, 85);
-            const duration = gsap.utils.random(18, 32); // 速度隨機
-            const wanderY = gsap.utils.random(100, 250); // 路徑隨機飄移幅度
+            const duration = gsap.utils.random(18, 32); 
+            // 路徑飄移幅度縮小，避免掉出上方區域
+            const wanderY = gsap.utils.random(50, 100); 
 
             container.appendChild(img);
 
@@ -135,7 +137,6 @@
 
         function scheduleButterflies() {
             setTimeout(() => {
-                // 隨機決定方向
                 spawnButterfly(Math.random() > 0.45 ? 'R' : 'L');
                 scheduleButterflies();
             }, gsap.utils.random(5000, 12000));
@@ -179,10 +180,7 @@
             gsap.to("#main-logo", { scale: 1.05, duration: 4, repeat: -1, yoyo: true, ease: "sine.inOut" });
 
             setTimeout(() => {
-                // 背景清晰轉場
                 document.getElementById('master-bg').classList.add('is-clear');
-
-                // Logo 淡出
                 const overlay = document.getElementById('opening-overlay');
                 overlay.style.opacity = 0; 
                 overlay.style.transform = "translateY(-30px)";
@@ -191,11 +189,11 @@
                     overlay.style.display = 'none';
                     rotateMessage(); 
                     setInterval(rotateMessage, 12000); 
-                    scheduleButterflies(); // 啟動蝴蝶
-                    fetchMessages(); // 開始撈資料
+                    scheduleButterflies(); 
+                    fetchMessages(); 
                     setInterval(fetchMessages, 45000); 
                 }, 3500); 
-            }, 6500); // Logo 展示 6.5 秒
+            }, 6500); 
         }
 
         window.onload = launch;
