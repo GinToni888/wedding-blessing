@@ -67,7 +67,8 @@
         
         const localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
-            { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福 祝大家玩得開心\n We are deeply touched by your warm blessings.\n Have fun 🥂" },
+            { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福\n We are deeply touched by your warm blessings." },
+            { name: "Maggie & Stanley", msg: "祝大家玩得開心\n Have fun 🥂 " }
         ];
         
         let messages = []; 
@@ -84,7 +85,8 @@
         }
         function getRandomButterflyY() {
             const dice = Math.random() * 100;
-            const zone = dice < 70 ? [1, 2, 4][Math.floor(Math.random() * 3)] : [3, 5][Math.floor(Math.random() * 2)];
+            // 蝴蝶也避開最下方，只在 top 70% 活動
+            const zone = dice < 60 ? [1, 2][Math.floor(Math.random() * 2)] : 4;
             return (window.innerHeight * gsap.utils.random((zone - 1) * 20, zone * 20)) / 100;
         }
         function spawnButterfly() {
@@ -104,13 +106,17 @@
             gsap.timeline({ onComplete: () => img.remove() }).to(img, { opacity: 1, duration: 2 }).to(img, { x: (dir === 'toRight' ? window.innerWidth + 300 : -300), duration: 22, ease: "none" });
         }
 
-        // --- 🌸 儀式花牆 (500 朵修正版) ---
+        // --- 🌸 儀式花牆 (500 朵集中上半部) ---
         let placedFlowers = [];
         function initCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
             const files = ['flower1.gif', 'flower2.gif', 'flower3.gif'];
-            // 總數 500 朵比例：300 (60%), 175 (35%), 25 (5%)
-            const zones = [{c:300,y1:2,y2:33},{c:175,y1:34,y2:65},{c:25,y1:66,y2:92}];
+            
+            // --- 關鍵修改：重新定義區域與數量 ---
+            // 總數 500 朵，只分佈在 Top 65% 的區域
+            // Zone 1 (極高密度頂部 2%-35%): 350 朵
+            // Zone 2 (高密度中部 36%-65%): 150 朵
+            const zones = [{c:350,y1:2,y2:35}, {c:150,y1:36,y2:65}];
             
             zones.forEach(z => {
                 for (let i = 0; i < z.c; i++) {
@@ -119,11 +125,12 @@
                     let s = ch < 0.7 ? 100 : 55, f = ch < 0.7 ? files[0] : (ch < 0.85 ? files[1] : files[2]);
                     let x, y, found = false;
                     
-                    for (let att = 0; att < 180; att++) {
+                    // 提高嘗試次數到 200，確保在極高密度下能找到位置
+                    for (let att = 0; att < 200; att++) {
                         x = gsap.utils.random(2, 96); y = gsap.utils.random(z.y1, z.y2);
                         const pxX = (window.innerWidth * x) / 100, pxY = (window.innerHeight * y) / 100;
                         
-                        // 高密度下碰撞緩衝設為 2px
+                        // 碰撞緩衝維持緊湊的 2px
                         const ov = placedFlowers.some(fl => Math.sqrt(Math.pow(pxX-fl.x,2)+Math.pow(pxY-fl.y,2)) < (s/2+fl.s/2+2));
                         
                         if (!ov) {
@@ -131,15 +138,18 @@
                             const fEl = document.createElement('div');
                             fEl.className = 'flower-item';
                             fEl.style.cssText = `left:${x}%;top:${y}%;width:${s}px;height:${s}px;background-image:url('${f}');`;
+                            
+                            // 視覺濾鏡維持不變
                             if (ch < 0.7) fEl.style.filter = 'brightness(1.05)'; 
                             else fEl.style.filter = 'opacity(0.8)';
+                            
                             overlay.appendChild(fEl);
                             found = true; break;
                         }
                     }
                 }
             });
-            console.log(`Initialized ${placedFlowers.length} flowers (500 Target).`);
+            console.log(`Initialized ${placedFlowers.length} flowers (Top-Heavy 500 Target).`);
         }
 
         function toggleCeremony() {
@@ -147,10 +157,10 @@
             const flowers = document.querySelectorAll('.flower-item');
             if (!isCeremonyActive) {
                 gsap.to(overlay, { top: 0, duration: 1.8, ease: "power4.inOut" });
-                // --- 調整綻放時間至 10 秒 ---
+                // --- 關鍵修改：加速綻放至 3 秒 ---
                 gsap.to(flowers, { 
                     scale: 1, duration: 1.2, delay: 1.2, 
-                    stagger: { amount: 10, from: "random" }, 
+                    stagger: { amount: 3, from: "random" }, // 從 10 改為 3
                     ease: "back.out(1.2)" 
                 });
                 isCeremonyActive = true;
@@ -203,23 +213,4 @@
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
-                    let filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
-                    messages = mixMessages(filtered.length > 0 ? filtered : data);
-                }
-            } catch (e) { console.log("Fetch failed"); }
-        }
-
-        window.onload = () => {
-            document.getElementById('bg-blurred').classList.add('is-clear');
-            initCeremony(); 
-            rotateMessage(); 
-            setInterval(rotateMessage, 12000);
-            setInterval(spawnButterfly, 15000);
-            fetchMessages(); 
-            setInterval(fetchMessages, 60000);
-        };
-
-        window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); toggleCeremony(); } });
-    </script>
-</body>
-</html>
+                    let filtered = data.filter(item => Object.values(item).some(v => v
