@@ -39,24 +39,27 @@
         .content { font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; font-weight: 500; word-wrap: break-word; white-space: pre-wrap; }
         .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 3. 🌸 儀式花牆 (去背透明) */
+        /* 3. 🌸 儀式花牆 (去背透明 + 居中對齊) */
         #ceremony-overlay {
             position: fixed; top: -110%; left: 0; width: 100vw; height: 100vh;
             z-index: 2000;
             background: transparent url('flower-wall.png') no-repeat center center;
             background-size: cover;
             will-change: transform;
-            display: flex; align-items: center; justify-content: center; /* 用於居中文字 */
+            display: flex; align-items: center; justify-content: center; /* 確保圖片居中 */
         }
         .flower-item { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; border: none !important; transform: scale(0); will-change: transform; }
 
-        /* 新增：Cheers 大字 */
-        #cheers-text {
-            font-family: 'Playfair Display', serif;
-            font-size: 150px; font-weight: 700; color: var(--gold);
-            text-shadow: 0 5px 30px rgba(0,0,0,0.3);
-            opacity: 0; transform: scale(0.8); /* 初始隱藏狀態 */
+        /* 新增：Cheers 圖片樣式 */
+        #cheers-img {
+            width: 80%; /* 佔據畫面寬度 80% */
+            height: auto; /* 維持比例 */
+            max-height: 80vh; /* 防止太高超出畫面 */
+            object-fit: contain;
+            opacity: 0; transform: scale(0.8); /* 初始隱藏與縮小狀態 */
             z-index: 2001; pointer-events: none;
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3)); /* 增加立體感陰影 */
+            will-change: transform, opacity;
         }
 
         @keyframes cardEnter { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -71,7 +74,7 @@
     <div id="display-wrapper"><div id="card-container"></div></div>
     
     <div id="ceremony-overlay">
-        <div id="cheers-text">Cheers</div>
+        <img id="cheers-img" src="cheers.png" alt="Cheers">
     </div>
     
     <div id="status-bar">SYSTEM READY</div>
@@ -124,16 +127,13 @@
         function initCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
             const files = ['flower1.gif', 'flower2.gif', 'flower3.gif'];
-            // 修改區域：避開底部 20%，最大 Y 值約 78%
             const zones = [{c:300,y1:2,y2:30},{c:175,y1:32,y2:60},{c:25,y1:62,y2:78}];
             
             zones.forEach(z => {
                 for (let i = 0; i < z.c; i++) {
                     const ch = Math.random();
-                    // 尺寸保持縮小 10% (100px / 55px)
                     let s = ch < 0.7 ? 100 : 55, f = ch < 0.7 ? files[0] : (ch < 0.85 ? files[1] : files[2]);
                     let x, y, found = false;
-                    
                     for (let att = 0; att < 200; att++) {
                         x = gsap.utils.random(2, 96); y = gsap.utils.random(z.y1, z.y2);
                         const pxX = (window.innerWidth * x) / 100, pxY = (window.innerHeight * y) / 100;
@@ -150,36 +150,31 @@
                     }
                 }
             });
-            console.log(`Initialized ${placedFlowers.length} flowers (Top 80% only).`);
         }
 
         function toggleCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
             const flowers = document.querySelectorAll('.flower-item');
-            const cheers = document.getElementById('cheers-text');
+            // 修改：抓取圖片元素
+            const cheers = document.getElementById('cheers-img');
 
             if (!isCeremonyActive) {
-                // 1. 花牆降下
                 gsap.to(overlay, { top: 0, duration: 1.8, ease: "power4.inOut" });
-                // 2. 加速綻放 (stagger 改為 2.5秒)
                 gsap.to(flowers, { 
                     scale: 1, duration: 0.8, delay: 1.2, 
                     stagger: { amount: 2.5, from: "random" }, 
                     ease: "back.out(1.5)" 
                 });
-                // 3. Cheers 進場與呼吸律動
-                const tl = gsap.timeline({ delay: 2.8 }); // 等花開得差不多了再進場
+                // Cheers 圖片進場與呼吸
+                const tl = gsap.timeline({ delay: 2.8 });
                 tl.to(cheers, { opacity: 1, scale: 1, duration: 1.2, ease: "power3.out" })
-                  .to(cheers, { scale: 1.05, opacity: 0.9, duration: 1.5, repeat: -1, yoyo: true, ease: "sine.inOut" }); // 呼吸循環
+                  .to(cheers, { scale: 1.05, opacity: 0.9, duration: 1.5, repeat: -1, yoyo: true, ease: "sine.inOut" });
 
                 isCeremonyActive = true;
             } else {
-                // 1. Cheers 退場
-                gsap.killTweensOf(cheers); // 停止呼吸
+                gsap.killTweensOf(cheers);
                 gsap.to(cheers, { opacity: 0, scale: 0.8, duration: 0.5 });
-                // 2. 花朵縮回
                 gsap.to(flowers, { scale: 0, duration: 0.6, delay: 0.2 });
-                // 3. 花牆收起
                 gsap.to(overlay, { top: "-110%", duration: 1.5, delay: 0.5, ease: "power4.inOut" });
                 isCeremonyActive = false;
             }
