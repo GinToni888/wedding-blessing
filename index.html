@@ -14,12 +14,10 @@
         label { display: block; margin-bottom: 5px; color: #666; font-size: 14px; }
         input, textarea { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 8px; box-sizing: border-box; background-color: #fdfdfd; }
         input[readonly] { background-color: #f5f5f5; color: #888; cursor: not-allowed; }
-        /* 您的桃粉色按鈕 #d63384 */
         button { width: 100%; padding: 15px; background-color: #d63384; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button:active { background-color: #b02a6a; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
         #loading { text-align: center; color: #d63384; }
-        
-        /* 彈窗標題顏色設定 */
         .my-swal-title { color: #d63384 !important; }
     </style>
 </head>
@@ -34,7 +32,7 @@
             <label>想對新人說的話</label>
             <textarea id="message" rows="5" placeholder="在此輸入您的祝福..." required></textarea>
         </div>
-        <button onclick="sendBlessing()">送出祝福</button>
+        <button id="submitBtn" onclick="sendBlessing()">送出祝福</button>
     </div>
     
     <div id="loading">載入中，請稍候...</div>
@@ -43,7 +41,6 @@
         const liffId = "2008923022-EZkZfxJf"; 
         const gasUrl = "https://script.google.com/macros/s/AKfycbyFYRF2DL0gqOeAybR3UOBQv9jC58S5AWNPoicQuFSM2LZT-HXP57UZC-UdAfZJYZFEOQ/exec"; 
 
-        // 初始化 LIFF
         async function main() {
             try {
                 await liff.init({ liffId: liffId });
@@ -51,9 +48,7 @@
                     liff.login();
                 } else {
                     const profile = await liff.getProfile();
-                    const nameInput = document.getElementById('name');
-                    nameInput.value = profile.displayName; 
-                    
+                    document.getElementById('name').value = profile.displayName; 
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('form-container').style.display = 'block';
                 }
@@ -65,10 +60,7 @@
         async function sendBlessing() {
             const name = document.getElementById('name').value;
             const message = document.getElementById('message').value;
-
-            // --- 修改點 1：獲取賓客的 userId 以供零件 D 發送感謝卡 ---
-            const profile = await liff.getProfile();
-            const userId = profile.userId;
+            const btn = document.getElementById('submitBtn');
 
             if (!message) {
                 Swal.fire({
@@ -80,15 +72,17 @@
                 return;
             }
 
-            const btn = document.querySelector('button');
+            const profile = await liff.getProfile();
+            const userId = profile.userId;
+
             const originalText = btn.innerText;
             btn.innerText = "傳送中...";
             btn.disabled = true;
 
             try {
+                // 1. 先將資料送往 Google 試算表
                 const response = await fetch(gasUrl, {
                     method: "POST",
-                    // --- 修改點 2：將 userId 一併傳送給 GAS ---
                     body: JSON.stringify({ 
                         name: name, 
                         message: message, 
@@ -97,7 +91,21 @@
                 });
 
                 if (response.ok) {
-                    // --- 修改點 3：使用 Swal 彈窗並自定義標題與顏色 ---
+                    // 2. 資料成功寫入後，讓賓客手機自動發送「關鍵字」
+                    // 檢查是否在 LINE App 內，且具備發送訊息權限
+                    if (liff.isInClient()) {
+                        try {
+                            await liff.sendMessages([{
+                                'type': 'text',
+                                'text': '感謝卡' // 這裡要跟妳 LINE 後台設定的關鍵字完全一致
+                            }]);
+                            console.log("關鍵字訊息已發送");
+                        } catch (sendErr) {
+                            console.error("發送訊息失敗", sendErr);
+                        }
+                    }
+
+                    // 3. 顯示成功彈窗
                     Swal.fire({
                         title: 'Maggie and Stanley',
                         text: `祝福已順利寄出！謝謝你，${name}`,
