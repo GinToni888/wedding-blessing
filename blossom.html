@@ -11,59 +11,47 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body, html { 
-            width: 100vw; height: 100vh; 
-            overflow: hidden; 
+            width: 100vw; height: 100vh; overflow: hidden; 
             background-color: var(--cream-bg); 
             font-family: "Playfair Display", "STFangsong", "華康儷中宋", "NSimSun", serif; 
         }
 
-        /* 1. 背景與蝴蝶層 */
+        /* 1. 背景層 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
         #bg-blurred { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; 
-            filter: blur(25px); transform: scale(1.1); 
-            transition: opacity 5s ease-in-out; will-change: opacity;
+            filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; 
         }
         .is-clear { opacity: 0; }
-        #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
-        .butterfly { position: absolute; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* 2. 卡片容器 */
-        #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 10; perspective: 1800px; }
+        /* 2. 蝴蝶層 */
+        #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
+        .butterfly { position: absolute; will-change: transform; opacity: 0; }
+
+        #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 10; }
         .message-card { 
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5); 
-            padding: 80px 110px; width: 1050px; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; animation: cardEnter 2.5s forwards; font-family: "STFangsong", "NSimSun", serif; 
+            padding: 80px 110px; width: 1050px; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; animation: cardEnter 2.5s forwards; 
         }
-        .sender { font-size: 26px; color: var(--sage-green); margin-bottom: 30px; letter-spacing: 0.25em; font-weight: bold; }
-        .content { font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; font-weight: 500; word-wrap: break-word; white-space: pre-wrap; }
-        .wedding-tag { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 3. 🌸 儀式花牆 (去背透明 + 居中對齊) */
+        /* 3. 🌸 儀式層：999 朵玫瑰與置頂光點 */
         #ceremony-overlay {
             position: fixed; top: -110%; left: 0; width: 100vw; height: 100vh;
-            z-index: 2000;
-            background: transparent url('flower-wall.png') no-repeat center center;
-            background-size: cover;
-            will-change: transform;
-            display: flex; align-items: center; justify-content: center; /* 確保圖片居中 */
+            z-index: 2000; background: transparent url('flower-wall.png') no-repeat center center;
+            background-size: cover; display: flex; align-items: center; justify-content: center;
         }
-        .flower-item { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; border: none !important; transform: scale(0); will-change: transform; }
-
-        /* 新增：Cheers 圖片樣式 */
-        #cheers-img {
-            width: 80%; /* 佔據畫面寬度 80% */
-            height: auto; /* 維持比例 */
-            max-height: 80vh; /* 防止太高超出畫面 */
-            object-fit: contain;
-            opacity: 0; transform: scale(0.8); /* 初始隱藏與縮小狀態 */
-            z-index: 2001; pointer-events: none;
-            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3)); /* 增加立體感陰影 */
+        /* 玫瑰 < 圖片 < 光點 */
+        .flower-item { position: absolute; background-size: contain; background-repeat: no-repeat; transform: scale(0); will-change: transform; z-index: 2000; }
+        #cheers-img { width: 80%; opacity: 0; transform: scale(0.8); z-index: 3000; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3)); will-change: transform, opacity; }
+        .sparkle {
+            position: absolute; width: 6px; height: 6px; border-radius: 50%;
+            background: #fff; box-shadow: 0 0 10px var(--gold), 0 0 20px #fff;
+            opacity: 0; pointer-events: none; z-index: 3005; /* 最上層 */
             will-change: transform, opacity;
         }
 
         @keyframes cardEnter { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(0,0,0,0.1); z-index: 3000; }
     </style>
 </head>
 <body>
@@ -76,148 +64,137 @@
     <div id="ceremony-overlay">
         <img id="cheers-img" src="cheers.png" alt="Cheers">
     </div>
-    
-    <div id="status-bar">SYSTEM READY</div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
-        
         const localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
             { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福\n We are deeply touched by your warm blessings." },
             { name: "Maggie & Stanley", msg: "祝大家玩得開心\n Have fun 🥂 " }
         ];
         
-        let messages = []; 
-        let currentIndex = 0;
-        let isCeremonyActive = false;
-        let initialLocalPhase = true; 
+        let messages = [], currentIndex = 0, isCeremonyActive = false, initialLocalPhase = true; 
+        let bloomTimer = null;
 
-        // --- 🦋 蝴蝶系統 ---
+        // --- 🦋 蝴蝶波浪系統 (3-5隻出現，休息2分鐘) ---
         const bfPool = { L: ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif'], R: ['bf1_R.gif', 'bf2_R.gif'] };
         let decks = { L: [], R: [] };
-        function getNextButterfly(type) {
-            if (decks[type].length === 0) decks[type] = [...bfPool[type]].sort(() => Math.random() - 0.5);
-            return decks[type].pop();
-        }
-        function getRandomButterflyY() {
-            const dice = Math.random() * 100;
-            const zone = dice < 70 ? [1, 2, 4][Math.floor(Math.random() * 3)] : [3, 5][Math.floor(Math.random() * 2)];
-            return (window.innerHeight * gsap.utils.random((zone - 1) * 20, zone * 20)) / 100;
-        }
+        function getNextBf(t) { if (!decks[t] || decks[t].length === 0) decks[t] = [...bfPool[t]].sort(() => Math.random() - 0.5); return decks[t].pop(); }
+
         function spawnButterfly() {
             const container = document.getElementById('butterfly-layer');
-            if (container.children.length >= 3 || isCeremonyActive) return; 
-            const dir = Math.random() > 0.5 ? 'toLeft' : 'toRight';
-            const pool = dir === 'toLeft' ? 'L' : 'R';
-            const img = document.createElement('img');
-            img.src = getNextButterfly(pool);
-            img.className = 'butterfly';
-            const scale = gsap.utils.random(0.18, 0.35);
-            const startX = (dir === 'toLeft') ? window.innerWidth + 200 : -200;
-            const startY = getRandomButterflyY();
+            const dir = Math.random() > 0.5 ? 'toLeft' : 'toRight', pool = dir === 'toLeft' ? 'L' : 'R';
+            const img = document.createElement('img'); img.className = 'butterfly'; img.src = getNextBf(pool);
+            const scale = gsap.utils.random(0.18, 0.35), startX = (dir === 'toLeft') ? window.innerWidth + 200 : -200;
+            const zone = Math.random() < 0.7 ? [1,2,4][Math.floor(Math.random()*3)] : [3,5][Math.floor(Math.random()*2)];
+            const startY = (window.innerHeight * gsap.utils.random((zone-1)*20, zone*20)) / 100;
             container.appendChild(img);
             let sX = (pool === 'L' && dir === 'toRight') || (pool === 'R' && dir === 'toLeft') ? -scale : scale;
             gsap.set(img, { x: startX, y: startY, scale: scale, scaleX: sX, opacity: 0 });
-            gsap.timeline({ onComplete: () => img.remove() }).to(img, { opacity: 1, duration: 2 }).to(img, { x: (dir === 'toRight' ? window.innerWidth + 300 : -300), duration: 22, ease: "none" });
+            gsap.timeline({ onComplete: () => img.remove() }).to(img, { opacity: 1, duration: 2 }).to(img, { x: (dir==='toRight'?window.innerWidth+300:-300), duration: 22, ease: "none" });
         }
 
-        // --- 🌸 儀式花牆 (500 朵 + 避開底部) ---
-        let placedFlowers = [];
-        function initCeremony() {
+        function startButterflyWave() {
+            if (isCeremonyActive) return;
+            const count = gsap.utils.random(3, 5, 1);
+            for (let i = 0; i < count; i++) {
+                setTimeout(spawnButterfly, i * 2500); // 間隔 2.5 秒出一隻
+            }
+            // 休息 2 分鐘 (120000ms) 再開啟下一波
+            setTimeout(startButterflyWave, 120000 + (count * 2500) + 22000);
+        }
+
+        // --- 🌸 999 朵玫瑰與光點 ---
+        const flowerCount = 999; 
+        const sparkleCount = 60; 
+        let flowerPool = [], sparklePool = [];
+
+        function initPools() {
             const overlay = document.getElementById('ceremony-overlay');
+            for (let i = 0; i < flowerCount; i++) {
+                const f = document.createElement('div'); f.className = 'flower-item';
+                overlay.appendChild(f); flowerPool.push(f);
+            }
+            for (let i = 0; i < sparkleCount; i++) {
+                const s = document.createElement('div'); s.className = 'sparkle';
+                overlay.appendChild(s); sparklePool.push(s);
+            }
+        }
+
+        function repositionAndBloom() {
+            if (!isCeremonyActive) return;
             const files = ['flower1.gif', 'flower2.gif', 'flower3.gif'];
-            // 修改區域：避開底部 20%，最大 Y 值約 78%
-            const zones = [{c:300,y1:2,y2:30},{c:175,y1:32,y2:60},{c:25,y1:62,y2:78}];
-            
+            // 999 朵：600 (60%), 350 (35%), 49 (5%) | 高度限制 80%
+            const zones = [{c:600,y1:2,y2:30},{c:350,y1:32,y2:60},{c:49,y1:62,y2:78}];
+            let currentIdx = 0, currentPlaced = [];
+
             zones.forEach(z => {
                 for (let i = 0; i < z.c; i++) {
-                    const ch = Math.random();
-                    // 尺寸保持縮小 10% (100px / 55px)
-                    let s = ch < 0.7 ? 100 : 55, f = ch < 0.7 ? files[0] : (ch < 0.85 ? files[1] : files[2]);
+                    const f = flowerPool[currentIdx++], chance = Math.random();
+                    // 尺寸縮小 20%：Flower1=80px, Flower2/3=44px
+                    let s = chance < 0.7 ? 80 : 44, file = chance < 0.7 ? files[0] : (chance < 0.85 ? files[1] : files[2]);
                     let x, y, found = false;
-                    
-                    for (let att = 0; att < 200; att++) {
+                    for (let att = 0; att < 40; att++) {
                         x = gsap.utils.random(2, 96); y = gsap.utils.random(z.y1, z.y2);
-                        const pxX = (window.innerWidth * x) / 100, pxY = (window.innerHeight * y) / 100;
-                        const ov = placedFlowers.some(fl => Math.sqrt(Math.pow(pxX-fl.x,2)+Math.pow(pxY-fl.y,2)) < (s/2+fl.s/2+2));
-                        if (!ov) {
-                            placedFlowers.push({x:pxX, y:pxY, s:s});
-                            const fEl = document.createElement('div');
-                            fEl.className = 'flower-item';
-                            fEl.style.cssText = `left:${x}%;top:${y}%;width:${s}px;height:${s}px;background-image:url('${f}');`;
-                            if (ch < 0.7) fEl.style.filter = 'brightness(1.05)'; else fEl.style.filter = 'opacity(0.8)';
-                            overlay.appendChild(fEl);
+                        const pxX = (window.innerWidth * x)/100, pxY = (window.innerHeight * y)/100;
+                        if (!currentPlaced.some(p => Math.sqrt(Math.pow(pxX-p.x,2)+Math.pow(pxY-p.y,2)) < (s/2+p.s/2+1))) {
+                            currentPlaced.push({x:pxX, y:pxY, s:s});
+                            gsap.set(f, { scale:0, left:x+'%', top:y+'%', width:s+'px', height:s+'px', backgroundImage:`url('${file}')`, rotation:gsap.utils.random(-180,180), filter:chance<0.7?'brightness(1.05)':'opacity(0.8)' });
                             found = true; break;
                         }
                     }
+                    if (!found) gsap.set(f, { scale: 0 });
                 }
+            });
+
+            gsap.to(flowerPool, { scale: 1, duration: 0.8, stagger: { amount: 2.5, from: "random" }, ease: "back.out(1.5)" });
+            bloomTimer = setTimeout(() => { if (isCeremonyActive) gsap.to(flowerPool, { scale: 0, duration: 1, stagger: { amount: 1, from: "center" }, onComplete: repositionAndBloom }); }, 10000);
+        }
+
+        function playSparkles() {
+            sparklePool.forEach(s => {
+                gsap.set(s, { x: gsap.utils.random(0, window.innerWidth), y: gsap.utils.random(0, window.innerHeight), scale: 0, opacity: 0 });
+                gsap.to(s, {
+                    duration: gsap.utils.random(3, 5),
+                    x: `+=${gsap.utils.random(-100, 100)}`,
+                    y: `+=${gsap.utils.random(-100, 100)}`,
+                    scale: gsap.utils.random(0.7, 1.8),
+                    opacity: gsap.utils.random(0.5, 1),
+                    repeat: -1, yoyo: true, ease: "sine.inOut", delay: gsap.utils.random(0, 3)
+                });
             });
         }
 
         function toggleCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
-            const flowers = document.querySelectorAll('.flower-item');
-            // 修改：抓取圖片元素
             const cheers = document.getElementById('cheers-img');
-
             if (!isCeremonyActive) {
-                gsap.to(overlay, { top: 0, duration: 1.8, ease: "power4.inOut" });
-                gsap.to(flowers, { 
-                    scale: 1, duration: 0.8, delay: 1.2, 
-                    stagger: { amount: 2.5, from: "random" }, 
-                    ease: "back.out(1.5)" 
-                });
-                // Cheers 圖片進場與呼吸 - 調整 delay 與花朵同步
-                const tl = gsap.timeline({ delay: 1.5 }); // 從 2.8 改為 1.5
-                tl.to(cheers, { opacity: 1, scale: 1, duration: 1.2, ease: "power3.out" })
-                  .to(cheers, { scale: 1.05, opacity: 0.9, duration: 1.5, repeat: -1, yoyo: true, ease: "sine.inOut" });
-
                 isCeremonyActive = true;
+                gsap.to(overlay, { top: 0, duration: 1.8, ease: "power4.inOut", onComplete: repositionAndBloom });
+                playSparkles();
+                gsap.timeline({ delay: 1.5 })
+                    .to(cheers, { opacity: 1, scale: 1, duration: 1.2, ease: "power3.out" })
+                    .to(cheers, { scale: 1.05, opacity: 0.9, duration: 1.5, repeat: -1, yoyo: true, ease: "sine.inOut" });
             } else {
-                gsap.killTweensOf(cheers);
-                gsap.to(cheers, { opacity: 0, scale: 0.8, duration: 0.5 });
-                gsap.to(flowers, { scale: 0, duration: 0.6, delay: 0.2 });
-                gsap.to(overlay, { top: "-110%", duration: 1.5, delay: 0.5, ease: "power4.inOut" });
                 isCeremonyActive = false;
+                clearTimeout(bloomTimer);
+                gsap.killTweensOf([cheers, flowerPool, sparklePool]);
+                gsap.to(sparklePool, { opacity: 0, duration: 0.5 });
+                gsap.to(cheers, { opacity: 0, scale: 0.8, duration: 0.5 });
+                gsap.to(flowerPool, { scale: 0, duration: 0.6 });
+                gsap.to(overlay, { top: "-110%", duration: 1.5, delay: 0.3, ease: "power4.inOut" });
             }
         }
 
-        // --- 🔄 輪播邏輯 ---
+        // --- 🔄 輪播系統 ---
         function rotateMessage() {
             if (isCeremonyActive) return;
             const container = document.getElementById('card-container');
-            const data = (initialLocalPhase) ? localMsgs[currentIndex] : messages[currentIndex];
+            const data = initialLocalPhase ? localMsgs[currentIndex] : messages[currentIndex];
             if (!data) return;
-
             container.innerHTML = `<div class="message-card"><div class="sender">— ${data.displayName || data.name} —</div><div class="content">${(data.displayMsg || data.msg).replace(/\n/g, '<br>')}</div><div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div></div>`;
-            
-            if (initialLocalPhase && currentIndex === localMsgs.length - 1) {
-                initialLocalPhase = false;
-                currentIndex = 0;
-            } else {
-                currentIndex = (currentIndex + 1) % (initialLocalPhase ? localMsgs.length : (messages.length || 1));
-            }
-        }
-
-        function mixMessages(remoteData) {
-            let pr = [];
-            remoteData.forEach(item => {
-                const text = (item.祝福語 || item.msg || "").toString();
-                const name = (item.賓客姓名 || item.name || "賓客");
-                if (text.length > 150) {
-                    const pts = Math.ceil(text.length / 150);
-                    for (let i = 0; i < pts; i++) pr.push({ displayName: `${name} (${i + 1}/${pts})`, displayMsg: text.substring(i * 150, (i + 1) * 150) });
-                } else pr.push({ displayName: name, displayMsg: text });
-            });
-            let lc = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
-            let mixed = [], lC = 0;
-            for (let i = 0; i < pr.length; i++) {
-                mixed.push(pr[i]);
-                if ((i + 1) % 15 === 0) { mixed.push(lc[lC % lc.length]); lC++; }
-            }
-            if (pr.length > 0 && pr.length % 15 !== 0) mixed.push(lc[lC % lc.length]);
-            return mixed;
+            if (initialLocalPhase && currentIndex === localMsgs.length - 1) { initialLocalPhase = false; currentIndex = 0; } 
+            else { currentIndex = (currentIndex + 1) % (initialLocalPhase ? localMsgs.length : (messages.length || 1)); }
         }
 
         async function fetchMessages() {
@@ -226,19 +203,21 @@
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
                     let filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
-                    messages = mixMessages(filtered.length > 0 ? filtered : data);
+                    const pr = (filtered.length > 0 ? filtered : data).map(item => ({ name: item.賓客姓名 || item.name || "賓客", msg: item.祝福語 || item.msg || "" }));
+                    let lc = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg })), mixed = [], lC = 0;
+                    pr.forEach((p, i) => { mixed.push({ displayName: p.name, displayMsg: p.msg }); if ((i + 1) % 15 === 0) { mixed.push(lc[lC % lc.length]); lC++; } });
+                    if (pr.length % 15 !== 0) mixed.push(lc[lC % lc.length]);
+                    messages = mixed;
                 }
-            } catch (e) { console.log("Fetch failed"); }
+            } catch (e) {}
         }
 
         window.onload = () => {
             document.getElementById('bg-blurred').classList.add('is-clear');
-            initCeremony(); 
-            rotateMessage(); 
-            setInterval(rotateMessage, 12000);
-            setInterval(spawnButterfly, 15000);
-            fetchMessages(); 
-            setInterval(fetchMessages, 60000);
+            initPools(); 
+            rotateMessage(); setInterval(rotateMessage, 12000);
+            startButterflyWave(); // 啟動波浪蝴蝶
+            fetchMessages(); setInterval(fetchMessages, 60000);
         };
 
         window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); toggleCeremony(); } });
