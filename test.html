@@ -46,8 +46,18 @@
             background: transparent url('flower-wall.png') no-repeat center center;
             background-size: cover;
             will-change: transform;
+            display: flex; align-items: center; justify-content: center; /* 用於居中文字 */
         }
         .flower-item { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; border: none !important; transform: scale(0); will-change: transform; }
+
+        /* 新增：Cheers 大字 */
+        #cheers-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 150px; font-weight: 700; color: var(--gold);
+            text-shadow: 0 5px 30px rgba(0,0,0,0.3);
+            opacity: 0; transform: scale(0.8); /* 初始隱藏狀態 */
+            z-index: 2001; pointer-events: none;
+        }
 
         @keyframes cardEnter { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         #status-bar { position: fixed; bottom: 15px; left: 20px; font-size: 10px; color: rgba(0,0,0,0.1); z-index: 3000; }
@@ -59,7 +69,11 @@
     <div id="bg-blurred"></div>
     <div id="butterfly-layer"></div>
     <div id="display-wrapper"><div id="card-container"></div></div>
-    <div id="ceremony-overlay"></div>
+    
+    <div id="ceremony-overlay">
+        <div id="cheers-text">Cheers</div>
+    </div>
+    
     <div id="status-bar">SYSTEM READY</div>
 
     <script>
@@ -85,8 +99,7 @@
         }
         function getRandomButterflyY() {
             const dice = Math.random() * 100;
-            // 蝴蝶也避開最下方，只在 top 70% 活動
-            const zone = dice < 60 ? [1, 2][Math.floor(Math.random() * 2)] : 4;
+            const zone = dice < 70 ? [1, 2, 4][Math.floor(Math.random() * 3)] : [3, 5][Math.floor(Math.random() * 2)];
             return (window.innerHeight * gsap.utils.random((zone - 1) * 20, zone * 20)) / 100;
         }
         function spawnButterfly() {
@@ -106,67 +119,68 @@
             gsap.timeline({ onComplete: () => img.remove() }).to(img, { opacity: 1, duration: 2 }).to(img, { x: (dir === 'toRight' ? window.innerWidth + 300 : -300), duration: 22, ease: "none" });
         }
 
-        // --- 🌸 儀式花牆 (500 朵集中上半部) ---
+        // --- 🌸 儀式花牆 (500 朵 + 避開底部) ---
         let placedFlowers = [];
         function initCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
             const files = ['flower1.gif', 'flower2.gif', 'flower3.gif'];
-            
-            // --- 關鍵修改：重新定義區域與數量 ---
-            // 總數 500 朵，只分佈在 Top 65% 的區域
-            // Zone 1 (極高密度頂部 2%-35%): 350 朵
-            // Zone 2 (高密度中部 36%-65%): 150 朵
-            const zones = [{c:350,y1:2,y2:35}, {c:150,y1:36,y2:65}];
+            // 修改區域：避開底部 20%，最大 Y 值約 78%
+            const zones = [{c:300,y1:2,y2:30},{c:175,y1:32,y2:60},{c:25,y1:62,y2:78}];
             
             zones.forEach(z => {
                 for (let i = 0; i < z.c; i++) {
                     const ch = Math.random();
-                    // Flower 1 (70%): 100px | Flower 2/3 (30%): 55px
+                    // 尺寸保持縮小 10% (100px / 55px)
                     let s = ch < 0.7 ? 100 : 55, f = ch < 0.7 ? files[0] : (ch < 0.85 ? files[1] : files[2]);
                     let x, y, found = false;
                     
-                    // 提高嘗試次數到 200，確保在極高密度下能找到位置
                     for (let att = 0; att < 200; att++) {
                         x = gsap.utils.random(2, 96); y = gsap.utils.random(z.y1, z.y2);
                         const pxX = (window.innerWidth * x) / 100, pxY = (window.innerHeight * y) / 100;
-                        
-                        // 碰撞緩衝維持緊湊的 2px
                         const ov = placedFlowers.some(fl => Math.sqrt(Math.pow(pxX-fl.x,2)+Math.pow(pxY-fl.y,2)) < (s/2+fl.s/2+2));
-                        
                         if (!ov) {
                             placedFlowers.push({x:pxX, y:pxY, s:s});
                             const fEl = document.createElement('div');
                             fEl.className = 'flower-item';
                             fEl.style.cssText = `left:${x}%;top:${y}%;width:${s}px;height:${s}px;background-image:url('${f}');`;
-                            
-                            // 視覺濾鏡維持不變
-                            if (ch < 0.7) fEl.style.filter = 'brightness(1.05)'; 
-                            else fEl.style.filter = 'opacity(0.8)';
-                            
+                            if (ch < 0.7) fEl.style.filter = 'brightness(1.05)'; else fEl.style.filter = 'opacity(0.8)';
                             overlay.appendChild(fEl);
                             found = true; break;
                         }
                     }
                 }
             });
-            console.log(`Initialized ${placedFlowers.length} flowers (Top-Heavy 500 Target).`);
+            console.log(`Initialized ${placedFlowers.length} flowers (Top 80% only).`);
         }
 
         function toggleCeremony() {
             const overlay = document.getElementById('ceremony-overlay');
             const flowers = document.querySelectorAll('.flower-item');
+            const cheers = document.getElementById('cheers-text');
+
             if (!isCeremonyActive) {
+                // 1. 花牆降下
                 gsap.to(overlay, { top: 0, duration: 1.8, ease: "power4.inOut" });
-                // --- 關鍵修改：加速綻放至 3 秒 ---
+                // 2. 加速綻放 (stagger 改為 2.5秒)
                 gsap.to(flowers, { 
-                    scale: 1, duration: 1.2, delay: 1.2, 
-                    stagger: { amount: 3, from: "random" }, // 從 10 改為 3
-                    ease: "back.out(1.2)" 
+                    scale: 1, duration: 0.8, delay: 1.2, 
+                    stagger: { amount: 2.5, from: "random" }, 
+                    ease: "back.out(1.5)" 
                 });
+                // 3. Cheers 進場與呼吸律動
+                const tl = gsap.timeline({ delay: 2.8 }); // 等花開得差不多了再進場
+                tl.to(cheers, { opacity: 1, scale: 1, duration: 1.2, ease: "power3.out" })
+                  .to(cheers, { scale: 1.05, opacity: 0.9, duration: 1.5, repeat: -1, yoyo: true, ease: "sine.inOut" }); // 呼吸循環
+
                 isCeremonyActive = true;
             } else {
-                gsap.to(flowers, { scale: 0, duration: 0.8 });
-                gsap.to(overlay, { top: "-110%", duration: 1.5, delay: 0.3, ease: "power4.inOut" });
+                // 1. Cheers 退場
+                gsap.killTweensOf(cheers); // 停止呼吸
+                gsap.to(cheers, { opacity: 0, scale: 0.8, duration: 0.5 });
+                // 2. 花朵縮回
+                gsap.to(flowers, { scale: 0, duration: 0.6, delay: 0.2 });
+                // 3. 花牆收起
+                gsap.to(overlay, { top: "-110%", duration: 1.5, delay: 0.5, ease: "power4.inOut" });
                 isCeremonyActive = false;
             }
         }
@@ -213,4 +227,23 @@
                 const res = await fetch(`${gasUrl}?t=${Date.now()}`);
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
-                    let filtered = data.filter(item => Object.values(item).some(v => v
+                    let filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
+                    messages = mixMessages(filtered.length > 0 ? filtered : data);
+                }
+            } catch (e) { console.log("Fetch failed"); }
+        }
+
+        window.onload = () => {
+            document.getElementById('bg-blurred').classList.add('is-clear');
+            initCeremony(); 
+            rotateMessage(); 
+            setInterval(rotateMessage, 12000);
+            setInterval(spawnButterfly, 15000);
+            fetchMessages(); 
+            setInterval(fetchMessages, 60000);
+        };
+
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); toggleCeremony(); } });
+    </script>
+</body>
+</html>
