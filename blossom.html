@@ -22,14 +22,15 @@
             will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; 
         }
 
-        /* 輪播卡片 */
+        /* 輪播卡片容器 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
-        .message-card { position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5); padding: 80px 110px; width: 1050px; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; animation: cardEnter 2.5s forwards; }
+        /* 移除 CSS 動畫，改由 GSAP 控制 */
+        .message-card { position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5); padding: 80px 110px; width: 1050px; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; opacity: 0; /* 初始隱藏 */ }
         .sender { font-family: "STFangsong", serif !important; font-size: 26px; color: var(--sage-green); margin-bottom: 30px; letter-spacing: 0.25em; font-weight: bold; }
         .content { font-family: "STFangsong", serif !important; font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; font-weight: 500; word-wrap: break-word; white-space: pre-wrap; }
         .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 2. 🌸 儀式花牆 (方案 A：平衡優化版) */
+        /* 2. 🌸 儀式花牆 (方案 A 配比 + 全平面分佈) */
         #ceremony-overlay {
             position: fixed; top: -110%; left: 0; width: 100vw; height: 100vh;
             z-index: 2000; background: transparent url('flower-wall.png') no-repeat center center;
@@ -37,14 +38,12 @@
         }
         .flower-item { position: absolute; background-size: contain; background-repeat: no-repeat; transform: scale(0); will-change: transform; z-index: 2000; }
         
-        /* Cheers Logo 優化：GPU 加速 */
+        /* Cheers Logo 優化 */
         #cheers-img { 
             width: 75%; opacity: 0; transform: scale(0.8) translateZ(0); 
             z-index: 3000; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3)); 
             will-change: transform, opacity; 
         }
-
-        @keyframes cardEnter { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -68,15 +67,13 @@
         
         let messages = [], currentIndex = 0, isCeremonyActive = false, initialLocalPhase = true, bloomTimer = null;
 
-        // --- 🦋 仿生蝴蝶：平滑轉向與方向註記 ---
+        // --- 🦋 仿生蝴蝶：平滑轉向註記系統 ---
         const bfFiles = ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif', 'bf1_R.gif', 'bf2_R.gif'];
         let activeBfs = [];
-
         function initButterflies() {
             const count = gsap.utils.random(3, 5, 1);
             for (let i = 0; i < count; i++) { setTimeout(() => createButterfly(), i * 3500); }
         }
-
         function createButterfly() {
             if (isCeremonyActive) return;
             const container = document.getElementById('butterfly-layer');
@@ -87,7 +84,6 @@
             let nativeDir = file.includes('_L') ? -1 : 1;
             animateButterfly(img, nativeDir);
         }
-
         function animateButterfly(el, nativeDir) {
             let currentDir = nativeDir; 
             let baseScale = gsap.utils.random(0.7, 0.9); 
@@ -126,7 +122,7 @@
             fly();
         }
 
-        // --- 🌸 999 朵玫瑰：方案 A 平衡配比 ---
+        // --- 🌸 999 朵玫瑰：方案 A 配比 + 全平面分佈 ---
         const flowerCount = 999; 
         let flowerPool = [];
         function initPools() {
@@ -140,35 +136,35 @@
         function repositionAndBloom() {
             if (!isCeremonyActive) return;
             const files = ['flower1.gif', 'flower2.gif', 'flower3.gif', 'flower4.gif', 'flower5.gif', 'flower6.png'];
-            const zones = [{c:600,y1:2,y2:30},{c:350,y1:32,y2:60},{c:49,y1:62,y2:78}];
-            let currentIdx = 0, currentPlaced = [];
+            let currentPlaced = [];
 
-            zones.forEach(z => {
-                for (let i = 0; i < z.c; i++) {
-                    const f = flowerPool[currentIdx++];
-                    const chance = Math.random();
-                    let s, file;
-                    // 方案 A 機率判斷鏈
-                    if (chance < 0.378) { file = files[0]; s = 80; } 
-                    else if (chance < 0.488) { file = files[4]; s = 40; } 
-                    else if (chance < 0.638) { file = files[1]; s = 44; } 
-                    else if (chance < 0.788) { file = files[2]; s = 44; } 
-                    else if (chance < 0.894) { file = files[3]; s = 44; } 
-                    else { file = files[5]; s = 44; } 
+            // 移除區域限制，改為單一迴圈全平面分佈
+            for (let i = 0; i < flowerCount; i++) {
+                const f = flowerPool[i];
+                const chance = Math.random();
+                let s, file;
+                // 方案 A 機率配比
+                if (chance < 0.378) { file = files[0]; s = 80; } 
+                else if (chance < 0.488) { file = files[4]; s = 40; } 
+                else if (chance < 0.638) { file = files[1]; s = 44; } 
+                else if (chance < 0.788) { file = files[2]; s = 44; } 
+                else if (chance < 0.894) { file = files[3]; s = 44; } 
+                else { file = files[5]; s = 44; } 
 
-                    let x, y, found = false;
-                    for (let att = 0; att < 35; att++) {
-                        x = gsap.utils.random(2, 96); y = gsap.utils.random(z.y1, z.y2);
-                        const pxX = (window.innerWidth * x)/100, pxY = (window.innerHeight * y)/100;
-                        if (!currentPlaced.some(p => Math.sqrt(Math.pow(pxX-p.x,2)+Math.pow(pxY-p.y,2)) < (s/2+p.s/2+1.5))) {
-                            currentPlaced.push({x:pxX, y:pxY, s:s});
-                            gsap.set(f, { scale:0, left:x+'%', top:y+'%', width:s+'px', height:s+'px', backgroundImage:`url('${file}')`, rotation:gsap.utils.random(-180,180), filter: (file===files[0]||file===files[4]) ? 'brightness(1.05)' : 'opacity(0.8)' });
-                            found = true; break;
-                        }
+                let x, y, found = false;
+                for (let att = 0; att < 35; att++) {
+                    x = gsap.utils.random(1, 99); // X軸 1%~99%
+                    y = gsap.utils.random(1, 99); // Y軸 1%~99% (全螢幕垂直分佈)
+                    const pxX = (window.innerWidth * x)/100, pxY = (window.innerHeight * y)/100;
+                    // 碰撞檢測
+                    if (!currentPlaced.some(p => Math.sqrt(Math.pow(pxX-p.x,2)+Math.pow(pxY-p.y,2)) < (s/2+p.s/2+1.5))) {
+                        currentPlaced.push({x:pxX, y:pxY, s:s});
+                        gsap.set(f, { scale:0, left:x+'%', top:y+'%', width:s+'px', height:s+'px', backgroundImage:`url('${file}')`, rotation:gsap.utils.random(-180,180), filter: (file===files[0]||file===files[4]) ? 'brightness(1.05)' : 'opacity(0.8)' });
+                        found = true; break;
                     }
-                    if (!found) gsap.set(f, { scale: 0 });
                 }
-            });
+                if (!found) gsap.set(f, { scale: 0 });
+            }
 
             gsap.to(flowerPool, { scale: 1, duration: 0.8, stagger: { amount: 2.5, from: "random" }, ease: "back.out(1.5)", force3D: true });
             
@@ -206,12 +202,44 @@
             }
         }
 
+        // --- ✨ 新增：卡片模糊切換特效 ---
         function rotateMessage() {
             if (isCeremonyActive) return;
             const container = document.getElementById('card-container');
+            const currentCard = container.querySelector('.message-card');
             const data = initialLocalPhase ? localMsgs[currentIndex] : messages[currentIndex];
             if (!data) return;
-            container.innerHTML = `<div class="message-card"><div class="sender">— ${data.displayName || data.name} —</div><div class="content">${(data.displayMsg || data.msg).replace(/\n/g, '<br>')}</div><div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div></div>`;
+
+            // GSAP 切換時間軸
+            const tl = gsap.timeline();
+
+            // 1. 舊卡片模糊淡出
+            if (currentCard) {
+                tl.to(currentCard, { 
+                    opacity: 0, 
+                    filter: "blur(15px)", 
+                    y: -30, // 稍微往上浮動消失
+                    duration: 0.8, 
+                    ease: "power2.in" 
+                });
+            }
+
+            // 2. 更新內容並準備新卡片初始狀態
+            tl.add(() => {
+                container.innerHTML = `<div class="message-card" style="opacity:0; filter:blur(15px); transform:translateY(40px)"><div class="sender">— ${data.displayName || data.name} —</div><div class="content">${(data.displayMsg || data.msg).replace(/\n/g, '<br>')}</div><div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div></div>`;
+            });
+
+            // 3. 新卡片模糊淡入
+            tl.to(container.querySelector('.message-card'), { 
+                opacity: 1, 
+                filter: "blur(0px)", 
+                y: 0, 
+                duration: 1, 
+                ease: "power2.out",
+                force3D: true
+            }, "+=0.1"); // 稍微延遲一點點進場
+
+            // 更新索引
             if (initialLocalPhase && currentIndex === localMsgs.length - 1) { initialLocalPhase = false; currentIndex = 0; } 
             else { currentIndex = (currentIndex + 1) % (initialLocalPhase ? localMsgs.length : (messages.length || 1)); }
         }
@@ -234,6 +262,7 @@
         window.onload = () => {
             document.getElementById('bg-blurred').classList.add('is-clear');
             initPools(); initButterflies();
+            // 首次執行不延遲，後續每 12 秒切換
             rotateMessage(); setInterval(rotateMessage, 12000);
             fetchMessages(); setInterval(fetchMessages, 60000);
         };
