@@ -10,29 +10,30 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100vw; height: 100vh; overflow: hidden; background-color: var(--cream-bg); font-family: "Playfair Display", "STFangsong", "華康儷中宋", serif; }
 
-        /* 1. 層級架構 (三明治) */
+        /* 1. 三明治層級架構 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
         #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; }
         .is-clear { opacity: 0; }
         
-        /* 🦋 蝴蝶層 (修正：基準寬度 60px) */
+        /* 🦋 蝴蝶層：基準寬度鎖定，杜絕巨大化 */
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { 
             position: absolute; 
-            width: 60px; /* 基準寬度 */
+            width: 60px !important; /* 強制基準寬度 */
             height: auto;
             will-change: transform; 
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); 
             opacity: 0; 
         }
 
+        /* 字卡輪播容器 (獨立運作) */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
         .message-card { position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5); padding: 80px 110px; width: 1050px; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; animation: cardEnter 2.5s forwards; }
         .sender { font-family: "STFangsong", serif !important; font-size: 26px; color: var(--sage-green); margin-bottom: 30px; letter-spacing: 0.25em; font-weight: bold; }
         .content { font-family: "STFangsong", serif !important; font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; font-weight: 500; word-wrap: break-word; white-space: pre-wrap; }
         .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 2. 🌸 儀式花牆 (全畫面獨立模式) */
+        /* 2. 🌸 儀式花牆 (頂層，全畫面獨立) */
         #ceremony-overlay {
             position: fixed; top: -110%; left: 0; width: 100vw; height: 100vh;
             z-index: 2000; background: transparent url('flower-wall.png') no-repeat center center;
@@ -58,7 +59,6 @@
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
-        // 歡迎詞內容調整
         const localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
             { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福，祝大家玩得開心\n We are deeply touched by your warm blessings.\n Have fun 🥂" }
@@ -66,7 +66,7 @@
         
         let messages = [], currentIndex = 0, isCeremonyActive = false, initialLocalPhase = true, bloomTimer = null;
 
-        // --- 🦋 仿生蝴蝶：透視縮放與物理鏡射 ---
+        // --- 🦋 仿生蝴蝶：物理鏡射與方向修正系統 ---
         const bfFiles = ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif', 'bf1_R.gif', 'bf2_R.gif'];
         let activeBfs = [];
 
@@ -88,17 +88,19 @@
             img.src = file;
             container.appendChild(img);
             
+            // 原生朝向識別：_L 原生頭向左 (-1), _R 原生頭向右 (1)
             let nativeDir = file.includes('_L') ? -1 : 1;
             animateButterfly(img, nativeDir);
         }
 
         function animateButterfly(el, nativeDir) {
-            let currentDir = nativeDir; 
-            let baseScale = gsap.utils.random(0.7, 1.0); // 基於 60px 的微調
+            let currentDir = nativeDir; // 當前移動方向
+            let baseScale = gsap.utils.random(0.7, 0.9); // 基於 60px 的精緻縮放
             let startX = currentDir === 1 ? -150 : window.innerWidth + 150;
             let startY = gsap.utils.random(150, window.innerHeight - 250);
 
-            gsap.set(el, { x: startX, y: startY, scale: baseScale, opacity: 0 });
+            // 初始設定：如果移動方向等於原生朝向，scaleX 為正，否則鏡射
+            gsap.set(el, { x: startX, y: startY, scaleX: (currentDir === nativeDir ? baseScale : -baseScale), scaleY: baseScale, opacity: 0 });
             gsap.to(el, { opacity: 1, duration: 2 });
 
             function fly() {
@@ -113,32 +115,36 @@
                     ease: "sine.inOut",
                     onUpdate: () => {
                         let curX = gsap.getProperty(el, "x");
-                        // 🌲 大樹區透視縮放：飛入右側 1/6 時縮小 30%
                         let inTreeZone = curX > window.innerWidth * 0.83;
-                        gsap.to(el, { scale: inTreeZone ? baseScale * 0.7 : baseScale, duration: 1.5 });
+                        
+                        // 🌲 大樹區透視縮放：保持 scaleX 與 scaleY 比例
+                        let treeScale = inTreeZone ? baseScale * 0.7 : baseScale;
+                        let flip = (currentDir === nativeDir) ? treeScale : -treeScale;
+                        gsap.to(el, { scaleX: flip, scaleY: treeScale, duration: 1.5 });
 
                         if (currentDir === 1 && inTreeZone) {
                             if (Math.random() < 0.003) {
                                 gsap.killTweensOf(el);
-                                gsap.to(el, { scale: baseScale * 0.65, duration: 0.6, repeat: 3, yoyo: true }); 
+                                gsap.to(el, { scaleY: treeScale * 0.9, duration: 0.6, repeat: 3, yoyo: true }); 
                                 setTimeout(() => { turnAround(); }, 4500);
                             }
                         }
                     },
                     onComplete: turnAround
                 });
-                gsap.to(el, { y: "-=50", duration: duration/4, repeat: -1, yoyo: true, ease: "sine.inOut" });
+                // S 型起伏
+                gsap.to(el, { y: "-=40", duration: duration/4, repeat: -1, yoyo: true, ease: "sine.inOut" });
             }
 
             function turnAround() {
                 currentDir *= -1;
-                let flip = (currentDir === nativeDir) ? 1 : -1;
+                let flip = (currentDir === nativeDir) ? baseScale : -baseScale;
                 gsap.to(el, { scaleX: flip, duration: 0.8, onComplete: fly });
             }
             fly();
         }
 
-        // --- 🌸 999 朵玫瑰 (獨立 15 秒循環) ---
+        // --- 🌸 999 朵玫瑰 (獨立運作) ---
         const flowerCount = 999; 
         let flowerPool = [];
         function initPools() {
@@ -161,8 +167,8 @@
                     const chance = Math.random();
                     let s, file;
                     
-                    if (chance < 0.378) { file = files[0]; s = 80; } // F1
-                    else if (chance < 0.588) { file = files[4]; s = 40; } // F5 縮小至 40px
+                    if (chance < 0.378) { file = files[0]; s = 80; } 
+                    else if (chance < 0.588) { file = files[4]; s = 40; } // F5 40px
                     else if (chance < 0.691) { file = files[1]; s = 44; } 
                     else if (chance < 0.794) { file = files[2]; s = 44; } 
                     else if (chance < 0.897) { file = files[3]; s = 44; } 
@@ -182,7 +188,6 @@
                 }
             });
 
-            // 隨機綻放方向
             gsap.to(flowerPool, { scale: 1, duration: 0.8, stagger: { amount: 2.5, from: "random" }, ease: "back.out(1.5)" });
             
             bloomTimer = setTimeout(() => { 
