@@ -15,7 +15,7 @@
         #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; }
         .is-clear { opacity: 0; }
         
-        /* 🦋 蝴蝶層：CSS 物理鎖定基準寬度 */
+        /* 🦋 蝴蝶層：基準尺寸鎖定 */
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { 
             position: absolute; 
@@ -26,14 +26,14 @@
             opacity: 0; 
         }
 
-        /* 字卡輪播容器 (獨立運作) */
+        /* 字卡容器 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
         .message-card { position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; outline: 12px solid rgba(255, 255, 255, 0.5); padding: 80px 110px; width: 1050px; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; animation: cardEnter 2.5s forwards; }
         .sender { font-family: "STFangsong", serif !important; font-size: 26px; color: var(--sage-green); margin-bottom: 30px; letter-spacing: 0.25em; font-weight: bold; }
         .content { font-family: "STFangsong", serif !important; font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; font-weight: 500; word-wrap: break-word; white-space: pre-wrap; }
         .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 2. 🌸 儀式花牆 (頂層) */
+        /* 2. 🌸 儀式花牆 (方案 B：亮點加強) */
         #ceremony-overlay {
             position: fixed; top: -110%; left: 0; width: 100vw; height: 100vh;
             z-index: 2000; background: transparent url('flower-wall.png') no-repeat center center;
@@ -66,7 +66,7 @@
         
         let messages = [], currentIndex = 0, isCeremonyActive = false, initialLocalPhase = true, bloomTimer = null;
 
-        // --- 🦋 仿生蝴蝶：平滑轉向註記系統 ---
+        // --- 🦋 仿生蝴蝶：平滑轉向導航系統 ---
         const bfFiles = ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif', 'bf1_R.gif', 'bf2_R.gif'];
         let activeBfs = [];
 
@@ -88,18 +88,17 @@
             img.src = file;
             container.appendChild(img);
             
-            // 註記天生朝向：_L 原生頭向左 (-1), _R 原生頭向右 (1)
+            // 原生標記：_L 頭向左(-1), _R 頭向右(1)
             let nativeDir = file.includes('_L') ? -1 : 1;
             animateButterfly(img, nativeDir);
         }
 
         function animateButterfly(el, nativeDir) {
-            let currentDir = nativeDir; // 初始移動方向同天生朝向
+            let currentDir = nativeDir; 
             let baseScale = gsap.utils.random(0.7, 0.9); 
             let startX = currentDir === 1 ? -150 : window.innerWidth + 150;
             let startY = gsap.utils.random(150, window.innerHeight - 250);
 
-            // 初始狀態設定
             gsap.set(el, { x: startX, y: startY, scaleX: (currentDir === nativeDir ? baseScale : -baseScale), scaleY: baseScale, opacity: 0 });
             gsap.to(el, { opacity: 1, duration: 2 });
 
@@ -117,7 +116,7 @@
                         let curX = gsap.getProperty(el, "x");
                         let inTreeZone = curX > window.innerWidth * 0.83;
                         
-                        // 🌲 大樹區透視縮放：保持 scaleX 與 scaleY 聯動
+                        // 🌲 大樹區透視縮放
                         let treeScale = inTreeZone ? baseScale * 0.7 : baseScale;
                         let flip = (currentDir === nativeDir) ? treeScale : -treeScale;
                         gsap.to(el, { scaleX: flip, scaleY: treeScale, duration: 1.2 });
@@ -125,7 +124,6 @@
                         if (currentDir === 1 && inTreeZone) {
                             if (Math.random() < 0.003) {
                                 gsap.killTweensOf(el);
-                                // 棲息時的小拍動
                                 gsap.to(el, { scaleY: treeScale * 0.9, duration: 0.6, repeat: 3, yoyo: true }); 
                                 setTimeout(() => { turnAround(); }, 4500);
                             }
@@ -133,21 +131,20 @@
                     },
                     onComplete: turnAround
                 });
-                // S 型起伏
                 gsap.to(el, { y: "-=40", duration: duration/4, repeat: -1, yoyo: true, ease: "sine.inOut" });
             }
 
             function turnAround() {
                 if (isCeremonyActive) return;
                 currentDir *= -1;
-                // 平滑翻轉：透過 GSAP 漸變 scaleX
+                // 平滑轉身： scaleX 導航註記
                 let flipTarget = (currentDir === nativeDir) ? baseScale : -baseScale;
                 gsap.to(el, { scaleX: flipTarget, duration: 0.8, ease: "power1.inOut", onComplete: fly });
             }
             fly();
         }
 
-        // --- 🌸 999 朵玫瑰 (15秒呼吸循環) ---
+        // --- 🌸 999 朵玫瑰：方案 B 色彩配比 ---
         const flowerCount = 999; 
         let flowerPool = [];
         function initPools() {
@@ -170,11 +167,12 @@
                     const chance = Math.random();
                     let s, file;
                     
+                    // 🎯 方案 B 機率區間：F1(37.8%), F5(5%), F2(20%), F3(20%), F4(8.6%), F6(8.6%)
                     if (chance < 0.378) { file = files[0]; s = 80; } 
-                    else if (chance < 0.588) { file = files[4]; s = 40; } 
-                    else if (chance < 0.691) { file = files[1]; s = 44; } 
-                    else if (chance < 0.794) { file = files[2]; s = 44; } 
-                    else if (chance < 0.897) { file = files[3]; s = 44; } 
+                    else if (chance < 0.428) { file = files[4]; s = 40; } 
+                    else if (chance < 0.628) { file = files[1]; s = 44; } // F2 亮點加強
+                    else if (chance < 0.828) { file = files[2]; s = 44; } // F3 亮點加強
+                    else if (chance < 0.914) { file = files[3]; s = 44; } 
                     else { file = files[5]; s = 44; } 
 
                     let x, y, found = false;
