@@ -15,11 +15,11 @@
         #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; }
         .is-clear { opacity: 0; }
         
-        /* 🦋 蝴蝶層：基準寬度鎖定，杜絕巨大化 */
+        /* 🦋 蝴蝶層：CSS 物理鎖定基準寬度 */
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { 
             position: absolute; 
-            width: 60px !important; /* 強制基準寬度 */
+            width: 60px !important; 
             height: auto;
             will-change: transform; 
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); 
@@ -33,7 +33,7 @@
         .content { font-family: "STFangsong", serif !important; font-size: 26px; line-height: 1.9; color: var(--text-color); margin-bottom: 40px; font-weight: 500; word-wrap: break-word; white-space: pre-wrap; }
         .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 18px; color: var(--gold); }
 
-        /* 2. 🌸 儀式花牆 (頂層，全畫面獨立) */
+        /* 2. 🌸 儀式花牆 (頂層) */
         #ceremony-overlay {
             position: fixed; top: -110%; left: 0; width: 100vw; height: 100vh;
             z-index: 2000; background: transparent url('flower-wall.png') no-repeat center center;
@@ -66,7 +66,7 @@
         
         let messages = [], currentIndex = 0, isCeremonyActive = false, initialLocalPhase = true, bloomTimer = null;
 
-        // --- 🦋 仿生蝴蝶：物理鏡射與方向修正系統 ---
+        // --- 🦋 仿生蝴蝶：平滑轉向註記系統 ---
         const bfFiles = ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif', 'bf1_R.gif', 'bf2_R.gif'];
         let activeBfs = [];
 
@@ -88,18 +88,18 @@
             img.src = file;
             container.appendChild(img);
             
-            // 原生朝向識別：_L 原生頭向左 (-1), _R 原生頭向右 (1)
+            // 註記天生朝向：_L 原生頭向左 (-1), _R 原生頭向右 (1)
             let nativeDir = file.includes('_L') ? -1 : 1;
             animateButterfly(img, nativeDir);
         }
 
         function animateButterfly(el, nativeDir) {
-            let currentDir = nativeDir; // 當前移動方向
-            let baseScale = gsap.utils.random(0.7, 0.9); // 基於 60px 的精緻縮放
+            let currentDir = nativeDir; // 初始移動方向同天生朝向
+            let baseScale = gsap.utils.random(0.7, 0.9); 
             let startX = currentDir === 1 ? -150 : window.innerWidth + 150;
             let startY = gsap.utils.random(150, window.innerHeight - 250);
 
-            // 初始設定：如果移動方向等於原生朝向，scaleX 為正，否則鏡射
+            // 初始狀態設定
             gsap.set(el, { x: startX, y: startY, scaleX: (currentDir === nativeDir ? baseScale : -baseScale), scaleY: baseScale, opacity: 0 });
             gsap.to(el, { opacity: 1, duration: 2 });
 
@@ -117,14 +117,15 @@
                         let curX = gsap.getProperty(el, "x");
                         let inTreeZone = curX > window.innerWidth * 0.83;
                         
-                        // 🌲 大樹區透視縮放：保持 scaleX 與 scaleY 比例
+                        // 🌲 大樹區透視縮放：保持 scaleX 與 scaleY 聯動
                         let treeScale = inTreeZone ? baseScale * 0.7 : baseScale;
                         let flip = (currentDir === nativeDir) ? treeScale : -treeScale;
-                        gsap.to(el, { scaleX: flip, scaleY: treeScale, duration: 1.5 });
+                        gsap.to(el, { scaleX: flip, scaleY: treeScale, duration: 1.2 });
 
                         if (currentDir === 1 && inTreeZone) {
                             if (Math.random() < 0.003) {
                                 gsap.killTweensOf(el);
+                                // 棲息時的小拍動
                                 gsap.to(el, { scaleY: treeScale * 0.9, duration: 0.6, repeat: 3, yoyo: true }); 
                                 setTimeout(() => { turnAround(); }, 4500);
                             }
@@ -137,14 +138,16 @@
             }
 
             function turnAround() {
+                if (isCeremonyActive) return;
                 currentDir *= -1;
-                let flip = (currentDir === nativeDir) ? baseScale : -baseScale;
-                gsap.to(el, { scaleX: flip, duration: 0.8, onComplete: fly });
+                // 平滑翻轉：透過 GSAP 漸變 scaleX
+                let flipTarget = (currentDir === nativeDir) ? baseScale : -baseScale;
+                gsap.to(el, { scaleX: flipTarget, duration: 0.8, ease: "power1.inOut", onComplete: fly });
             }
             fly();
         }
 
-        // --- 🌸 999 朵玫瑰 (獨立運作) ---
+        // --- 🌸 999 朵玫瑰 (15秒呼吸循環) ---
         const flowerCount = 999; 
         let flowerPool = [];
         function initPools() {
@@ -168,7 +171,7 @@
                     let s, file;
                     
                     if (chance < 0.378) { file = files[0]; s = 80; } 
-                    else if (chance < 0.588) { file = files[4]; s = 40; } // F5 40px
+                    else if (chance < 0.588) { file = files[4]; s = 40; } 
                     else if (chance < 0.691) { file = files[1]; s = 44; } 
                     else if (chance < 0.794) { file = files[2]; s = 44; } 
                     else if (chance < 0.897) { file = files[3]; s = 44; } 
