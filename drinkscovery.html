@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Drinkscovery Overlay</title>
+    <style>
+        :root {
+            --cream-white: rgba(255, 253, 240, 0.9);
+            --discovery-gold: #D4AF37;
+            --danger-red: #FF3B3B;
+            --forest-green: #4F7942;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            background-color: transparent; /* 重要：保持透明 */
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        }
+
+        /* 背景框架層 (你的綠植 + Logo 圖) */
+        #base-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('your-base-frame.png') no-repeat center center;
+            z-index: 1;
+        }
+
+        /* 鏡頭準星 (需要旋轉動畫) */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: url('your-crosshair.png') no-repeat center center;
+            z-index: 2;
+            transition: all 0.5s ease;
+        }
+
+        .searching #crosshair {
+            animation: rotate-slow 10s linear infinite;
+            opacity: 0.5;
+        }
+
+        .locked #crosshair {
+            animation: pulse 0.5s ease-in-out infinite alternate;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+            filter: drop-shadow(0 0 15px var(--discovery-gold));
+        }
+
+        /* 右側資訊標牌 */
+        #info-panel {
+            position: absolute;
+            right: -500px; /* 初始隱藏 */
+            top: 200px;
+            width: 400px;
+            padding: 25px;
+            background: var(--cream-white);
+            border-left: 8px solid var(--forest-green);
+            transition: right 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 3;
+            box-shadow: -5px 5px 15px rgba(0,0,0,0.2);
+        }
+
+        #info-panel.show { right: 50px; }
+
+        .species-title { font-size: 28px; font-weight: bold; color: #333; margin-bottom: 5px; }
+        .latin-name { font-style: italic; font-size: 18px; color: #666; margin-bottom: 15px; }
+        .data-row { font-size: 20px; margin: 8px 0; color: #444; }
+
+        /* 模式特定顏色 */
+        .mode-danger { border-left-color: var(--danger-red) !important; }
+        .mode-protected { border-left-color: var(--discovery-gold) !important; }
+
+        /* 動畫定義 */
+        @keyframes rotate-slow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes pulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.15); } }
+    </style>
+</head>
+<body class="searching">
+
+    <div id="base-layer"></div>
+    <div id="crosshair"></div>
+
+    <div id="info-panel">
+        <div class="species-title" id="sp-name">物種名稱</div>
+        <div class="latin-name" id="sp-latin">Latin Name</div>
+        <hr>
+        <div class="data-row" id="sp-data1">屬性：--</div>
+        <div class="data-row" id="sp-data2">習性：--</div>
+    </div>
+
+    <script>
+        const panel = document.getElementById('info-panel');
+        
+        // 核心切換控制函數 (你可以在主控端透過 WebSocket 呼叫此函數)
+        function updateSpecies(mode, name, latin, data1, data2) {
+            // mode: 'cute', 'protected', 'danger'
+            
+            document.body.className = 'locked';
+            panel.classList.remove('show');
+            
+            setTimeout(() => {
+                document.getElementById('sp-name').innerText = name;
+                document.getElementById('sp-latin').innerText = latin;
+                document.getElementById('sp-data1').innerText = data1;
+                document.getElementById('sp-data2').innerText = data2;
+                
+                panel.className = 'show';
+                if(mode === 'danger') panel.classList.add('mode-danger');
+                if(mode === 'protected') panel.classList.add('mode-protected');
+            }, 300);
+        }
+
+        function resetSearching() {
+            document.body.className = 'searching';
+            panel.classList.remove('show');
+        }
+
+        // 測試用：updateSpecies('danger', '瘋狂獵犬屬', 'Canis Ebrius', '肝功能：超進化', '習性：集體獵殺新郎');
+    </script>
+</body>
+</html>
