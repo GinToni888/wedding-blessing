@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drinkscovery 導演端</title>
+    <style>
+        body { font-family: sans-serif; background: #fdfdf0; padding: 20px; text-align: center; }
+        .group { margin-bottom: 20px; border: 1px solid #ddd; padding: 10px; border-radius: 10px; }
+        button { width: 100%; padding: 20px; margin: 5px 0; font-size: 18px; border-radius: 8px; border: none; color: white; cursor: pointer; }
+        .btn-searching { background: #4F7942; } /* 森林綠 */
+        .btn-reset { background: #888; }
+        .btn-cute { background: #ffb7c5; color: #333; }
+        .btn-protect { background: #D4AF37; }
+        .btn-danger { background: #FF3B3B; }
+        h3 { color: #555; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h2>Drinkscovery 遙控器</h2>
+
+    <div class="group">
+        <button class="btn-searching" onclick="sendCmd('searching')">📡 開始掃描</button>
+        <button class="btn-reset" onclick="sendCmd('idle')">✖️ 重置畫面</button>
+    </div>
+
+    <div class="group">
+        <h3>可愛動物區</h3>
+        <button class="btn-cute" onclick="sendLock('cute', '臉紅兔屬', 'Lepus Roseus', '屬性：極度靦腆', '觀察：酒精過敏 100%')">🐰 鎖定臉紅兔</button>
+    </div>
+
+    <div class="group">
+        <h3>保護動物區</h3>
+        <button class="btn-protect" onclick="sendLock('protected', '長官守護者', 'Dux Maximus', '屬性：威嚴隆重', '狀態：紅包加成中')">🦁 鎖定長官</button>
+    </div>
+
+    <div class="group">
+        <h3>危險動物區</h3>
+        <button class="btn-danger" onclick="sendLock('danger', '瘋狂獵犬屬', 'Canis Ebrius', '屬性：肝功能超頻', '警告：會搶酒喝')">🐺 鎖定瘋狂獵犬</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // 貼上你的 Firebase Config
+        const firebaseConfig = {
+            databaseURL: "https://你的專案ID-default-rtdb.firebaseio.com/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.sendCmd = (state) => {
+            set(ref(db, 'drinkscovery/status'), { state: state, ts: Date.now() });
+        };
+
+        window.sendLock = (mode, name, latin, d1, d2) => {
+            set(ref(db, 'drinkscovery/status'), {
+                state: 'locked',
+                mode: mode,
+                name: name,
+                latin: latin,
+                data1: d1,
+                data2: d2,
+                ts: Date.now()
+            });
+        };
+    </script>
+</body>
+</html>
