@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>鏡開儀式 Kagami Biraki</title>
+  
+  <!-- 載入 Tailwind CSS 框架 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 載入字體與自訂動畫 CSS -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+    
+    body { margin: 0; overflow: hidden; background-color: #fcf9f2; }
+    #app { width: 100vw; height: 100vh; }
+
+    .font-serif-tc { font-family: 'Playfair Display', 'Noto Serif TC', serif; }
+    
+    @keyframes flash {
+      0% { background-color: rgba(255, 255, 255, 0); }
+      30% { background-color: rgba(255, 255, 255, 0.95); }
+      100% { background-color: rgba(255, 255, 255, 0); }
+    }
+    .animate-flash { animation: flash 0.8s ease-out forwards; }
+    
+    @keyframes floatUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-float { animation: floatUp 1.2s ease-out forwards; }
+    
+    @keyframes pulse-slow {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+    .animate-pulse-slow { animation: pulse-slow 3s infinite ease-in-out; }
+
+    @keyframes shake {
+      0%, 100% { transform: scale(1.05) translate(0, 0) rotate(0); }
+      20% { transform: scale(1.05) translate(-6px, 6px) rotate(-1deg); }
+      40% { transform: scale(1.05) translate(6px, -6px) rotate(1deg); }
+      60% { transform: scale(1.05) translate(-6px, -6px) rotate(-1deg); }
+      80% { transform: scale(1.05) translate(6px, 6px) rotate(1deg); }
+    }
+    .animate-shake { animation: shake 0.4s ease-in-out forwards; }
+
+    /* 木槌敲擊動畫 */
+    @keyframes mallet-strike {
+      0% { transform: rotate(50deg); }
+      60% { transform: rotate(-35deg); }
+      100% { transform: rotate(-25deg); }
+    }
+    .animate-mallet-strike { animation: mallet-strike 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
+  </style>
+</head>
+<body>
+
+  <div id="app" class="relative w-full h-screen bg-[#fcf9f2] overflow-hidden font-serif-tc text-[#4a5240] transition-colors duration-1000">
+    
+    <!-- 裝飾背景 SVG - 左上角藤蔓 -->
+    <svg class="absolute top-0 left-0 w-64 md:w-96 text-[#5b7042] opacity-80 pointer-events-none" viewBox="0 0 200 200" fill="currentColor">
+      <path d="M0,0 L200,0 C150,50 100,100 50,200 C30,150 10,100 0,0 Z" fill="none" />
+      <path d="M10,0 Q30,50 50,120 Q20,60 10,0" stroke="currentColor" stroke-width="1" fill="none" />
+      <path d="M40,0 Q70,80 80,150 Q50,70 40,0" stroke="currentColor" stroke-width="0.5" fill="none" />
+      <path d="M20,30 C30,20 40,30 30,40 C20,50 10,40 20,30 Z" />
+      <path d="M40,60 C55,50 65,65 50,75 C35,85 25,70 40,60 Z" />
+      <path d="M60,100 C75,90 85,105 70,115 C55,125 45,110 60,100 Z" opacity="0.8"/>
+      <path d="M10,80 C25,70 35,85 20,95 C5,105 -5,90 10,80 Z" opacity="0.6"/>
+      <path d="M80,30 C95,20 105,35 90,45 C75,55 65,40 80,30 Z" opacity="0.7"/>
+      <circle cx="25" cy="35" r="3" fill="#FFF8EE" />
+      <circle cx="45" cy="65" r="4" fill="#FFF8EE" />
+      <circle cx="85" cy="35" r="3" fill="#FFF8EE" />
+    </svg>
+
+    <!-- 裝飾背景 SVG - 右下角樹木 -->
+    <svg class="absolute bottom-0 right-0 w-72 md:w-[28rem] text-[#6b7554] opacity-70 pointer-events-none" viewBox="0 0 200 300" fill="currentColor">
+      <path d="M180,300 Q170,150 150,0 Q160,150 190,300 Z" fill="#7a6b5d" />
+      <path d="M165,150 Q120,100 80,120 C100,90 130,110 160,130 Z" fill="#7a6b5d" />
+      <circle cx="150" cy="50" r="40" opacity="0.4" />
+      <circle cx="100" cy="100" r="35" opacity="0.5" />
+      <circle cx="180" cy="80" r="45" opacity="0.3" />
+      <circle cx="120" cy="160" r="30" opacity="0.6" />
+      <circle cx="180" cy="180" r="35" opacity="0.4" />
+    </svg>
+
+    <!-- 裝飾背景 SVG - 底部草地 -->
+    <svg class="absolute bottom-0 left-0 w-full h-32 md:h-48 text-[#829161] opacity-60 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1000 100" fill="currentColor">
+      <path d="M0,100 L1000,100 L1000,50 Q800,80 600,40 T200,60 Q100,70 0,50 Z" />
+      <path d="M0,100 L1000,100 L1000,70 Q750,90 500,60 T100,80 Q50,90 0,70 Z" fill="#5b7042" opacity="0.5"/>
+      <!-- 原有的小花苞/圓點 -->
+      <circle cx="150" cy="65" r="2" fill="#e8c058" />
+      <circle cx="160" cy="70" r="1.5" fill="#ffffff" />
+      <circle cx="350" cy="55" r="2.5" fill="#e8c058" />
+      <circle cx="550" cy="45" r="2" fill="#ffffff" />
+      <circle cx="560" cy="50" r="1.5" fill="#8c78a5" />
+      <circle cx="850" cy="75" r="2.5" fill="#e8c058" />
+      <circle cx="900" cy="65" r="2" fill="#ffffff" />
+    </svg>
+    
+    <!-- 敲擊時的閃爍白光 -->
+    <div id="flash-overlay" class="hidden absolute inset-0 z-[60] pointer-events-none animate-flash"></div>
+
+    <!-- 慶祝畫面的粒子畫布 -->
+    <canvas id="celebrate-canvas" class="absolute inset-0 z-[55] pointer-events-none opacity-0 transition-opacity duration-300"></canvas>
+
+    <!-- 蝴蝶裝飾 -->
+    <div class="absolute top-1/4 right-1/4 w-4 h-4 text-pink-300 opacity-60 animate-pulse-slow">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12,15 C8,20 2,16 6,10 C8,7 12,12 12,15 Z M12,15 C16,20 22,16 18,10 C16,7 12,12 12,15 Z" />
+      </svg>
+    </div>
+
+    <!-- 中央文字區 -->
+    <div id="text-wrapper" class="absolute inset-0 z-30 flex flex-col items-center justify-start pt-[12vh] md:pt-[15vh] pointer-events-none transition-transform duration-300">
+      <div class="w-full max-w-4xl px-6 flex flex-col items-center text-center">
+        
+        <!-- 準備畫面文字 -->
+        <div id="ready-text" class="flex flex-col items-center w-full drop-shadow-sm animate-float">
+          <div class="flex items-center gap-4 text-[#8b917e] text-lg md:text-xl tracking-[0.3em] uppercase mb-6">
+            <span class="w-8 h-[1px] bg-[#8b917e]"></span>
+            Maggie & Stanley
+            <span class="w-8 h-[1px] bg-[#8b917e]"></span>
+          </div>
+          <h1 class="text-4xl md:text-6xl lg:text-7xl font-medium tracking-widest text-[#4a5240] mb-4 leading-tight">
+            鏡開儀式
+          </h1>
+          <p class="text-xl md:text-2xl text-[#6b7554] tracking-widest mb-6">
+            Kagami Biraki Ceremony
+          </p>
+          <div class="text-sm md:text-base text-[#a8a18c] tracking-widest italic bg-white/40 backdrop-blur-sm px-6 py-2 rounded-full">
+            Forever Love 2026 🥂 Let's celebrate together
+          </div>
+        </div>
+
+        <!-- 慶祝畫面文字 (初始隱藏) -->
+        <div id="celebrate-text" class="hidden animate-float flex-col items-center w-full mt-10">
+          <div class="flex items-center gap-4 text-[#d4af37] text-lg md:text-xl tracking-[0.3em] uppercase mb-6">
+            <span class="w-12 h-[1px] bg-[#d4af37]"></span>
+            Cheers
+            <span class="w-12 h-[1px] bg-[#d4af37]"></span>
+          </div>
+          <h1 class="text-6xl md:text-8xl font-semibold tracking-[0.2em] text-[#d4af37] mb-8 leading-tight drop-shadow-md">
+            乾 杯
+          </h1>
+          <p class="text-2xl md:text-4xl text-[#4a5240] tracking-[0.2em] mb-4 font-medium">
+            百年好合 幸福美滿
+          </p>
+          <p class="text-lg md:text-2xl text-[#8b917e] tracking-widest mb-10">
+            A toast to love, laughter, and happily ever after.
+          </p>
+          <div class="w-24 h-[1px] bg-[#d4af37]/50 mb-8"></div>
+          <p class="text-sm md:text-base text-[#a8a18c] tracking-widest italic bg-white/40 backdrop-blur-sm px-6 py-2 rounded-full">
+            Thank you for celebrating with us
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 巨型酒樽與木槌互動區 - 加入 wrapper 外層以隔離排版與動畫 -->
+    <div id="interactive-wrapper" class="absolute bottom-[-200px] left-1/2 -translate-x-1/2 w-[160vw] sm:w-[130vw] md:w-[90vw] lg:w-[70vw] max-w-[1200px] translate-y-[35%] md:translate-y-[40%] z-40 pointer-events-none">
+      
+      <!-- 內部負責接收點擊與震動動畫的區塊 -->
+      <div id="interactive-area" class="relative w-full h-full flex justify-center cursor-pointer group pointer-events-auto transition-transform duration-300" title="邀請大家一起敲擊！">
+        
+        <!-- 提示文字 -->
+        <div class="absolute top-[8%] left-1/2 -translate-x-1/2 text-sm md:text-lg text-[#b5a789] bg-white/80 backdrop-blur-md px-6 py-2 rounded-full tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-50 shadow-md">
+          一起敲擊！ (Click to Strike)
+        </div>
+        
+        <!-- 酒樽圖片 -->
+        <img src="去背酒樽.png" alt="酒樽" class="w-full h-auto drop-shadow-2xl group-hover:brightness-105 transition-all duration-300 mix-blend-multiply" />
+        
+        <!-- 木槌圖片 (保留您的客製化位置) -->
+        <img id="mallet-img" src="去背木槌.png" alt="木槌" class="absolute z-50 w-[20%] max-w-[220px] origin-[50%_80%] top-[-150px] right-[22%] mr-[700px] mix-blend-multiply drop-shadow-2xl transition-transform duration-300 rotate-[35deg] group-hover:rotate-[50deg]" />
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      let isStriking = false;
+      const interactiveArea = document.getElementById('interactive-area');
+      const interactiveWrapper = document.getElementById('interactive-wrapper'); 
+      const textWrapper = document.getElementById('text-wrapper');
+      const readyText = document.getElementById('ready-text');
+      const celebrateText = document.getElementById('celebrate-text');
+      const flashOverlay = document.getElementById('flash-overlay');
+      const malletImg = document.getElementById('mallet-img');
+      const canvas = document.getElementById('celebrate-canvas');
+      const ctx = canvas.getContext('2d');
+
+      interactiveArea.addEventListener('click', () => {
+        if (isStriking) return;
+        isStriking = true;
+
+        // 1. 觸發敲擊瞬間的震動與閃光
+        interactiveArea.classList.add('animate-shake');
+        textWrapper.classList.add('animate-shake');
+        flashOverlay.classList.remove('hidden');
+        
+        // 替換木槌的 hover 動畫為敲擊向下動畫
+        malletImg.classList.remove('rotate-[35deg]', 'group-hover:rotate-[50deg]');
+        malletImg.classList.add('animate-mallet-strike');
+
+        // 2. 延遲 400 毫秒後，進入慶祝畫面
+        setTimeout(() => {
+          // 隱藏準備畫面與酒樽
+          readyText.classList.add('hidden');
+          interactiveWrapper.classList.add('hidden');
+          
+          // 顯示慶祝畫面文字與重製浮現動畫
+          celebrateText.classList.remove('hidden');
+          celebrateText.classList.add('flex');
+          
+          // 顯示粒子畫布
+          canvas.classList.remove('opacity-0');
+          canvas.classList.add('opacity-100');
+
+          // 啟動粒子特效
+          startCelebrateAnimation();
+
+          // 重置旗標，允許後續互動（例如若有重置/重玩流程）
+          isStriking = false;
+        }, 400);
+      });
+
+      // 粒子特效函數
+      function startCelebrateAnimation() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        const colors = ['#f4d0e6', '#ffe8f2', '#d4af37', '#e2c275', '#ffffff', '#e8c058']; 
+        const gravity = 0.35; 
+        const drag = 0.96;    
+
+        // 【爆發力道升級】增加粒子總數至 700
+        for (let i = 0; i < 700; i++) {
+          const baseAngle = -Math.PI / 2; 
+          // 稍微拓寬擴散角度，讓彩帶分佈更廣
+          const angleDeviation = (Math.random() - 0.5) * (Math.PI / 1.1); 
+          const finalAngle = baseAngle + angleDeviation;
+          // 增強噴發力道，讓彩帶衝得更高
+          const velocity = Math.random() * 45 + 20;
+
+          const rand = Math.random();
+          let type = 'confetti';
+          // 增加細長彩帶出現的機率（約佔 50%），讓熱烈感更強
+          if (rand > 0.5) type = 'ribbon'; 
+          else if (rand > 0.2) type = 'petal'; 
+
+          particles.push({
+            x: canvas.width / 2, 
+            y: canvas.height * 0.65, 
+            // 稍微放大彩帶與碎片的尺寸
+            w: Math.random() * 10 + 5,
+            h: Math.random() * 10 + 5,
+            speedX: Math.cos(finalAngle) * velocity,
+            speedY: Math.sin(finalAngle) * velocity,
+            rotation: Math.random() * 360,
+            rotationSpeed: Math.random() * 20 - 10,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            type: type
+          });
+        }
+
+        function render() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          particles.forEach((p) => {
+            p.speedY += gravity; 
+            p.speedX *= drag;    
+            p.speedY *= drag;    
+            
+            p.y += p.speedY;
+            p.x += p.speedX;
+            p.rotation += p.rotationSpeed;
+
+            if (p.y > canvas.height + 50) {
+               if (Math.random() > 0.98) {
+                   p.y = -10;
+                   p.x = Math.random() * canvas.width;
+                   p.speedY = Math.random() * 3 + 1;
+                   p.speedX = Math.random() * 2 - 1;
+               } else {
+                   p.speedX = 0; p.speedY = 0; 
+               }
+            }
+
+            if (p.speedX !== 0 || p.speedY !== 0) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+
+                if (p.type === 'petal') {
+                  ctx.beginPath();
+                  ctx.ellipse(0, 0, p.w, p.h / 1.5, 0, 0, Math.PI * 2);
+                  ctx.fill();
+                } else if (p.type === 'ribbon') {
+                  // 加長彩帶視覺比例
+                  ctx.fillRect(-p.w / 4, -p.h * 2, p.w / 2, p.h * 4);
+                } else {
+                  ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                }
+                ctx.restore();
+            }
+          });
+
+          requestAnimationFrame(render);
+        }
+
+        render();
+
+        window.addEventListener('resize', () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        });
+      }
+    });
+  </script>
+</body>
+</html>
