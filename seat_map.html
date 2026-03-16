@@ -9,7 +9,7 @@
             --cream: #FFFDD0;
             --forest-green: #2F4F4F;
             --accent: #D4AF37;
-            --red-carpet: #d43f3a;
+            --red-carpet: #ff4757;
         }
         body {
             font-family: "Microsoft JhengHei", sans-serif;
@@ -27,16 +27,15 @@
             margin-top: 20px; padding: 15px; border-radius: 15px;
             background: white; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        /* 地圖容器與 2.5D 效果 */
         #map-wrapper {
-            width: 100%; height: 400px; margin-top: 20px;
-            perspective: 800px; /* 增加 3D 深度感 */
+            width: 100%; height: 450px; margin-top: 20px;
+            perspective: 1000px;
         }
         #map-container {
             width: 100%; height: 100%;
             background: #fff; border: 1px solid #ccc;
             position: relative;
-            transform: rotateX(20deg) rotateZ(-5deg); /* 2.5D 沈浸角 */
+            transform: rotateX(25deg) rotateZ(-5deg);
             transform-style: preserve-3d;
         }
         .table {
@@ -44,35 +43,24 @@
             background: white; border: 2px solid var(--forest-green);
             border-radius: 50%; display: flex; align-items: center;
             justify-content: center; font-size: 12px; font-weight: bold;
-            transition: all 0.5s;
+            transition: all 0.5s; z-index: 2;
         }
         .table.main { width: 50px; height: 50px; border: 3px double var(--accent); }
         .highlight {
             background: var(--accent) !important; color: white;
-            transform: scale(1.5) translateZ(20px); box-shadow: 0 0 20px var(--accent);
+            transform: scale(1.3) translateZ(30px); box-shadow: 0 0 20px var(--accent);
         }
-        /* 路線動畫 */
-        /* 請確保 #route-svg 的 z-index 足夠高 */
+        /* 路線動畫層級強化 */
         #route-svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 99; /* 確保在桌子上方 */
-            overflow: visible;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10; overflow: visible;
         }
-        
         #guide-path {
-            stroke: #ff4757; /* 更有活力的紅色 */
-            stroke-width: 5;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            filter: drop-shadow(0 0 5px rgba(255, 71, 87, 0.8)); /* 增加發光沈浸感 */
+            stroke: var(--red-carpet); stroke-width: 6; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+            filter: drop-shadow(0 0 5px rgba(255, 71, 87, 0.6));
+            stroke-dasharray: 1000; stroke-dashoffset: 1000;
         }
-        @keyframes draw { to { stroke-dashoffset: 0; } }
     </style>
 </head>
 <body>
@@ -88,7 +76,7 @@
     </div>
 
     <div id="map-wrapper">
-        <div id="map-container" id="floorPlan">
+        <div id="map-container">
             <svg id="route-svg"><path id="guide-path" d="" /></svg>
         </div>
     </div>
@@ -98,7 +86,6 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwoDSBdb48ORAXDT9liPSY9aAJFxcFtEHF4ObzHcxHRrzwYjeIowpe0YDTv1lqUGzH9/exec";
     let guestData = [];
     
-    // 定義 20 桌的精確 X, Y 座標 (相對比例)
     const tablePositions = {
         "主桌": {x: 25, y: 35, type: 'main'},
         "1": {x: 35, y: 20}, "2": {x: 50, y: 20}, "3": {x: 65, y: 20}, "4": {x: 80, y: 20},
@@ -109,7 +96,6 @@
         "18": {x: 30, y: 85}, "19": {x: 45, y: 85}, "20": {x: 55, y: 85}
     };
 
-    // 初始化地圖
     function initMap() {
         const container = document.getElementById('map-container');
         for (let id in tablePositions) {
@@ -125,8 +111,10 @@
     }
 
     async function fetchData() {
-        const res = await fetch(API_URL);
-        guestData = await res.json();
+        try {
+            const res = await fetch(API_URL);
+            guestData = await res.json();
+        } catch(e) { console.error("API Error"); }
     }
 
     function searchGuest() {
@@ -134,9 +122,9 @@
         const guest = guestData.find(g => g.Name === name);
         const path = document.getElementById('guide-path');
         
-        // 重置地圖狀態
         document.querySelectorAll('.table').forEach(t => t.classList.remove('highlight'));
-        path.style.animation = 'none';
+        path.style.transition = 'none';
+        path.style.strokeDashoffset = '1000';
 
         if (guest) {
             document.getElementById('result').style.display = 'block';
@@ -147,7 +135,8 @@
             const target = document.getElementById(`table-${guest.TableID}`);
             if (target) {
                 target.classList.add('highlight');
-                drawRoute(tablePositions[guest.TableID]);
+                // 延遲一點點執行路線動畫，確保重置完成
+                setTimeout(() => drawRoute(tablePositions[guest.TableID]), 50);
             }
         } else {
             document.getElementById('result').style.display = 'none';
@@ -155,38 +144,21 @@
     }
 
     function drawRoute(targetPos) {
-    const path = document.getElementById('guide-path');
-    
-    // 起點：右方入口 (對應 PDF 第 8, 10, 12 桌附近) [cite: 31, 38-39]
-    const startX = 95; 
-    const startY = 50; 
-    
-    // 轉折點：L 型紅地毯的中線位置 (約在橫向 75% 處) [cite: 30]
-    const midX = 75; 
-    
-    // 生成 SVG 路徑指令 (M=起點, L=直線)
-    // 1. 從右側進入 -> 2. 走到紅地毯轉角 -> 3. 轉向目標 Y 軸 -> 4. 抵達目標 X 軸
-    const d = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${targetPos.y} L ${targetPos.x} ${targetPos.y}`;
-    
-    // 將百分比座標轉換為 SVG 畫布座標
-    const svg = document.getElementById('route-svg');
-    const width = svg.clientWidth;
-    const height = svg.clientHeight;
-    
-    const realD = d.replace(/\d+/g, (match, offset, string) => {
-        // 簡單的比例換算邏輯
-        return string.charAt(offset - 1) === ' ' || offset === 2 ? (match * width / 100) : (match * height / 100);
-    });
+        const path = document.getElementById('guide-path');
+        const startX = 95; // 右方入口 
+        const startY = 50; 
+        const midX = 75; // 紅地毯轉角 [cite: 30]
+        
+        // 修正後的路徑字符串，使用百分比標註
+        const d = `M ${startX}% ${startY}% L ${midX}% ${startY}% L ${midX}% ${targetPos.y}% L ${targetPos.x}% ${targetPos.y}%`;
+        
+        path.setAttribute('d', d);
+        
+        // 使用 getTotalLength 概念的簡化版
+        path.style.transition = "stroke-dashoffset 1.5s ease-in-out";
+        path.style.strokeDashoffset = "0";
+    }
 
-    path.setAttribute('d', d.replace(/(\d+)/g, "$1%")); // 使用百分比路徑
-    
-    // 觸發動畫
-    path.style.strokeDasharray = "1000";
-    path.style.strokeDashoffset = "1000";
-    path.getBoundingClientRect(); // 強制重繪
-    path.style.transition = "stroke-dashoffset 2s ease-in-out";
-    path.style.strokeDashoffset = "0";
-}
     window.onload = () => { initMap(); fetchData(); };
 </script>
 </body>
