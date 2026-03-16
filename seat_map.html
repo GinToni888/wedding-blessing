@@ -52,14 +52,25 @@
             transform: scale(1.5) translateZ(20px); box-shadow: 0 0 20px var(--accent);
         }
         /* 路線動畫 */
+        /* 請確保 #route-svg 的 z-index 足夠高 */
         #route-svg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
+            z-index: 99; /* 確保在桌子上方 */
+            overflow: visible;
         }
+        
         #guide-path {
-            stroke: var(--red-carpet); stroke-width: 4; fill: none;
-            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+            stroke: #ff4757; /* 更有活力的紅色 */
+            stroke-width: 5;
+            fill: none;
             stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 5px rgba(255, 71, 87, 0.8)); /* 增加發光沈浸感 */
         }
         @keyframes draw { to { stroke-dashoffset: 0; } }
     </style>
@@ -144,16 +155,38 @@
     }
 
     function drawRoute(targetPos) {
-        const path = document.getElementById('guide-path');
-        const startX = 95; // 右方入口 X
-        const startY = 40; // 右方入口 Y
-        
-        // 生成路徑：從右側進場 -> 轉彎到目標
-        const d = `M ${startX}% ${startY}% L 75% ${startY}% L 75% ${targetPos.y}% L ${targetPos.x}% ${targetPos.y}%`;
-        path.setAttribute('d', d);
-        path.style.animation = 'draw 1.5s forwards ease-out';
-    }
+    const path = document.getElementById('guide-path');
+    
+    // 起點：右方入口 (對應 PDF 第 8, 10, 12 桌附近) [cite: 31, 38-39]
+    const startX = 95; 
+    const startY = 50; 
+    
+    // 轉折點：L 型紅地毯的中線位置 (約在橫向 75% 處) [cite: 30]
+    const midX = 75; 
+    
+    // 生成 SVG 路徑指令 (M=起點, L=直線)
+    // 1. 從右側進入 -> 2. 走到紅地毯轉角 -> 3. 轉向目標 Y 軸 -> 4. 抵達目標 X 軸
+    const d = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${targetPos.y} L ${targetPos.x} ${targetPos.y}`;
+    
+    // 將百分比座標轉換為 SVG 畫布座標
+    const svg = document.getElementById('route-svg');
+    const width = svg.clientWidth;
+    const height = svg.clientHeight;
+    
+    const realD = d.replace(/\d+/g, (match, offset, string) => {
+        // 簡單的比例換算邏輯
+        return string.charAt(offset - 1) === ' ' || offset === 2 ? (match * width / 100) : (match * height / 100);
+    });
 
+    path.setAttribute('d', d.replace(/(\d+)/g, "$1%")); // 使用百分比路徑
+    
+    // 觸發動畫
+    path.style.strokeDasharray = "1000";
+    path.style.strokeDashoffset = "1000";
+    path.getBoundingClientRect(); // 強制重繪
+    path.style.transition = "stroke-dashoffset 2s ease-in-out";
+    path.style.strokeDashoffset = "0";
+}
     window.onload = () => { initMap(); fetchData(); };
 </script>
 </body>
