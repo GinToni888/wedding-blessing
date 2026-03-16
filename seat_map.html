@@ -43,6 +43,148 @@
             background: white; border: 2px solid var(--forest-green);
             border-radius: 50%; display: flex; align-items: center;
             justify-content: center; font-size: 12px; font-weight: bold;
+            transition: all 0.5s; z-index: 5;
+        }
+        .table.main { width: 55px; height: 55px; border: 3px double var(--accent); }
+        .highlight {
+            background: var(--accent) !important; color: white;
+            transform: scale(1.3) translateZ(40px); box-shadow: 0 0 20px var(--accent);
+        }
+        #route-svg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10; overflow: visible;
+        }
+        #guide-path {
+            stroke: var(--red-carpet); stroke-width: 6; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+            filter: drop-shadow(0 0 8px rgba(255, 71, 87, 0.8));
+            transition: stroke-dashoffset 2s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="letter-spacing: 2px;">Wedding Seating Map</h2>
+    <input type="text" id="nameInput" placeholder="請輸入姓名 (例如: 瑋珊)" oninput="searchGuest()">
+    
+    <div id="result">
+        <h3 id="guestGreeting" style="margin: 0;"></h3>
+        <p>您的位置在：<span id="tableName" style="font-weight: bold; color: var(--accent);"></span></p>
+        <div id="plusOnes" style="font-size: 0.9em; background: #f9f9f9; padding: 5px; border-radius: 5px;"></div>
+    </div>
+
+    <div id="map-wrapper">
+        <div id="map-container" id="floorPlan">
+            <svg id="route-svg"><path id="guide-path" d="" /></svg>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwoDSBdb48ORAXDT9liPSY9aAJFxcFtEHF4ObzHcxHRrzwYjeIowpe0YDTv1lqUGzH9/exec";
+    let guestData = [];
+    
+    // 桌位座標百分比 [cite: 18, 22-26, 31, 38-40]
+    const tablePositions = {
+        "主桌": {x: 25, y: 35, type: 'main'},
+        "1": {x: 35, y: 20}, "2": {x: 50, y: 20}, "3": {x: 65, y: 20}, "4": {x: 80, y: 20},
+        "5": {x: 45, y: 35}, "6": {x: 60, y: 35}, "8": {x: 85, y: 30},
+        "9": {x: 65, y: 55}, "10": {x: 80, y: 45}, "11": {x: 65, y: 70}, "12": {x: 80, y: 60},
+        "13": {x: 65, y: 85}, "14": {x: 80, y: 75},
+        "15": {x: 35, y: 70}, "16": {x: 45, y: 70}, "17": {x: 55, y: 70},
+        "18": {x: 30, y: 85}, "19": {x: 45, y: 85}, "20": {x: 55, y: 85}
+    };
+
+    function initMap() {
+        const container = document.getElementById('map-container');
+        for (let id in tablePositions) {
+            const pos = tablePositions[id];
+            const div = document.createElement('div');
+            div.className = `table ${pos.type || ''}`;
+            div.id = `table-${id}`;
+            div.style.left = pos.x + '%';
+            div.style.top = pos.y + '%';
+            div.innerText = id;
+            container.appendChild(div);
+        }
+    }
+
+    async function fetchData() {
+        try {
+            const res = await fetch(API_URL);
+            guestData = await res.json();
+        } catch(e) { console.error("API 連線失敗"); }
+    }
+
+    function searchGuest() {
+        const name = document.getElementById('nameInput').value.trim();
+        const guest = guestData.find(g => g.Name === name);
+        const path = document.getElementById('guide-path');
+        
+        // 重置
+        document.querySelectorAll('.table').forEach(t => t.classList.remove('highlight'));
+        path.setAttribute('d', ''); // 清空路徑
+        path.style.transition = 'none';
+
+        if (guest) {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('guestGreeting').innerText = `嗨 ${guest.Name}!`;
+            document.getElementById('tableName').innerText = guest.DisplayName || `第 ${guest.TableID} 桌`;
+            document.getElementById('plusOnes').innerText = guest.PlusOnes ? `同行親友：${guest.PlusOnes}` : "";
+
+            const target = document.getElementById(`table-${guest.TableID}`);
+            if (target) {
+                target.classList.add('highlight');
+                // 使用微延遲確保重置完成後再畫線
+                setTimeout(() => drawRoute(tablePositions[guest.TableID]), 100);
+            }
+        } else {
+            document.getElementById('result').style.display = 'none';
+        }
+    }
+
+    function drawRoute(targetPos) {
+        const path = document.getElementById('guide-path');
+        const svg = document.getElementById('route-svg');
+        const w = svg.clientWidth;
+        const h = svg.clientHeight;
+
+        // 起點與轉角座標轉換成像素 [cite: 31, 38-40]
+        const startX = w * 0.95; 
+        const startY = h * 0.50; 
+        const midX = w * 0.75; 
+        const targetX = w * (targetPos.x / 100);
+        const targetY = h * (targetPos.y / 100);
+
+        // 重新構建精確的像素路徑
+        const d = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${targetY} L ${targetX} ${targetY}`;
+        path.setAttribute('d', d);
+
+        // 核心動畫修復：強制瀏覽器計算長度
+        const length = path.getTotalLength();
+        path.style.strokeDasharray = length;
+        path.style.strokeDashoffset = length;
+        
+        // 強制渲染
+        path.getBoundingClientRect();
+        
+        path.style.transition = "stroke-dashoffset 1.5s ease-in-out";
+        path.style.strokeDashoffset = "0";
+    }
+
+    window.onload = () => { initMap(); fetchData(); };
+</script>
+</body>
+</html>            position: relative;
+            transform: rotateX(25deg) rotateZ(-5deg);
+            transform-style: preserve-3d;
+        }
+        .table {
+            position: absolute; width: 35px; height: 35px;
+            background: white; border: 2px solid var(--forest-green);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 12px; font-weight: bold;
             transition: all 0.5s; z-index: 2;
         }
         .table.main { width: 50px; height: 50px; border: 3px double var(--accent); }
