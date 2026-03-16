@@ -1,46 +1,160 @@
-<style>
-    #map-container {
-        width: 100%;
-        max-width: 800px;
-        height: 500px;
-        background: #f9f6f2; /* 奶油底色 */
-        margin-top: 20px;
-        border: 1px solid var(--forest-green);
-        position: relative;
-        overflow: hidden;
-    }
-    .table-marker {
-        position: absolute;
-        width: 40px;
-        height: 40px;
-        background: white;
-        border: 2px solid var(--forest-green);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        transition: all 0.5s ease;
-        transform: rotateX(45deg) rotateZ(-45deg); /* 2.5D 傾斜感 */
-    }
-    .highlight {
-        background: var(--accent) !important;
-        color: white;
-        transform: scale(1.5) rotateX(45deg) rotateZ(-45deg) !important;
-        box-shadow: 0 0 20px var(--accent);
-    }
-    /* 紅地毯路徑線 */
-    #path-line {
-        position: absolute;
-        stroke: #d43f3a;
-        stroke-width: 4;
-        fill: none;
-        stroke-dasharray: 1000;
-        stroke-dashoffset: 1000;
-    }
-</style>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maggie & Stanley 婚禮導引地圖</title>
+    <style>
+        :root {
+            --cream: #FFFDD0;
+            --forest-green: #2F4F4F;
+            --accent: #D4AF37;
+            --red-carpet: #d43f3a;
+        }
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--cream);
+            color: var(--forest-green);
+            display: flex; flex-direction: column; align-items: center;
+            padding: 10px; margin: 0; overflow-x: hidden;
+        }
+        .container { max-width: 600px; width: 100%; text-align: center; }
+        input {
+            width: 80%; padding: 15px; border: 2px solid var(--forest-green);
+            border-radius: 30px; font-size: 18px; margin-top: 10px; outline: none;
+        }
+        #result {
+            margin-top: 20px; padding: 15px; border-radius: 15px;
+            background: white; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        /* 地圖容器與 2.5D 效果 */
+        #map-wrapper {
+            width: 100%; height: 400px; margin-top: 20px;
+            perspective: 800px; /* 增加 3D 深度感 */
+        }
+        #map-container {
+            width: 100%; height: 100%;
+            background: #fff; border: 1px solid #ccc;
+            position: relative;
+            transform: rotateX(20deg) rotateZ(-5deg); /* 2.5D 沈浸角 */
+            transform-style: preserve-3d;
+        }
+        .table {
+            position: absolute; width: 35px; height: 35px;
+            background: white; border: 2px solid var(--forest-green);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 12px; font-weight: bold;
+            transition: all 0.5s;
+        }
+        .table.main { width: 50px; height: 50px; border: 3px double var(--accent); }
+        .highlight {
+            background: var(--accent) !important; color: white;
+            transform: scale(1.5) translateZ(20px); box-shadow: 0 0 20px var(--accent);
+        }
+        /* 路線動畫 */
+        #route-svg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+        }
+        #guide-path {
+            stroke: var(--red-carpet); stroke-width: 4; fill: none;
+            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+            stroke-linecap: round;
+        }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+    </style>
+</head>
+<body>
 
-<div id="map-container">
-    <svg id="svg-map" width="100%" height="100%" viewBox="0 0 800 500">
-        </svg>
+<div class="container">
+    <h2 style="letter-spacing: 2px;">Wedding Seating Map</h2>
+    <input type="text" id="nameInput" placeholder="請輸入姓名 (例如: 瑋珊)" oninput="searchGuest()">
+    
+    <div id="result">
+        <h3 id="guestGreeting" style="margin: 0;"></h3>
+        <p>您的位置在：<span id="tableName" style="font-weight: bold; color: var(--accent);"></span></p>
+        <div id="plusOnes" style="font-size: 0.9em; background: #f9f9f9; padding: 5px; border-radius: 5px;"></div>
+    </div>
+
+    <div id="map-wrapper">
+        <div id="map-container" id="floorPlan">
+            <svg id="route-svg"><path id="guide-path" d="" /></svg>
+        </div>
+    </div>
 </div>
+
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwoDSBdb48ORAXDT9liPSY9aAJFxcFtEHF4ObzHcxHRrzwYjeIowpe0YDTv1lqUGzH9/exec";
+    let guestData = [];
+    
+    // 定義 20 桌的精確 X, Y 座標 (相對比例)
+    const tablePositions = {
+        "主桌": {x: 25, y: 35, type: 'main'},
+        "1": {x: 35, y: 20}, "2": {x: 50, y: 20}, "3": {x: 65, y: 20}, "4": {x: 80, y: 20},
+        "5": {x: 45, y: 35}, "6": {x: 60, y: 35}, "8": {x: 85, y: 30},
+        "9": {x: 65, y: 55}, "10": {x: 80, y: 45}, "11": {x: 65, y: 70}, "12": {x: 80, y: 60},
+        "13": {x: 65, y: 85}, "14": {x: 80, y: 75},
+        "15": {x: 35, y: 70}, "16": {x: 45, y: 70}, "17": {x: 55, y: 70},
+        "18": {x: 30, y: 85}, "19": {x: 45, y: 85}, "20": {x: 55, y: 85}
+    };
+
+    // 初始化地圖
+    function initMap() {
+        const container = document.getElementById('map-container');
+        for (let id in tablePositions) {
+            const pos = tablePositions[id];
+            const div = document.createElement('div');
+            div.className = `table ${pos.type || ''}`;
+            div.id = `table-${id}`;
+            div.style.left = pos.x + '%';
+            div.style.top = pos.y + '%';
+            div.innerText = id;
+            container.appendChild(div);
+        }
+    }
+
+    async function fetchData() {
+        const res = await fetch(API_URL);
+        guestData = await res.json();
+    }
+
+    function searchGuest() {
+        const name = document.getElementById('nameInput').value.trim();
+        const guest = guestData.find(g => g.Name === name);
+        const path = document.getElementById('guide-path');
+        
+        // 重置地圖狀態
+        document.querySelectorAll('.table').forEach(t => t.classList.remove('highlight'));
+        path.style.animation = 'none';
+
+        if (guest) {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('guestGreeting').innerText = `嗨 ${guest.Name}!`;
+            document.getElementById('tableName').innerText = guest.DisplayName || `第 ${guest.TableID} 桌`;
+            document.getElementById('plusOnes').innerText = guest.PlusOnes ? `同行親友：${guest.PlusOnes}` : "";
+
+            const target = document.getElementById(`table-${guest.TableID}`);
+            if (target) {
+                target.classList.add('highlight');
+                drawRoute(tablePositions[guest.TableID]);
+            }
+        } else {
+            document.getElementById('result').style.display = 'none';
+        }
+    }
+
+    function drawRoute(targetPos) {
+        const path = document.getElementById('guide-path');
+        const startX = 95; // 右方入口 X
+        const startY = 40; // 右方入口 Y
+        
+        // 生成路徑：從右側進場 -> 轉彎到目標
+        const d = `M ${startX}% ${startY}% L 75% ${startY}% L 75% ${targetPos.y}% L ${targetPos.x}% ${targetPos.y}%`;
+        path.setAttribute('d', d);
+        path.style.animation = 'draw 1.5s forwards ease-out';
+    }
+
+    window.onload = () => { initMap(); fetchData(); };
+</script>
+</body>
+</html>
