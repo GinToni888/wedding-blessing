@@ -221,7 +221,7 @@
             const container = document.getElementById('card-container');
             const data = initialLocalPhase ? localMsgs[currentIndex] : messages[currentIndex];
             if (!data) return;
-            container.innerHTML = `<div class="message-card"><div class="sender">— ${data.displayName || data.name} —</div><div class="content">${(data.displayMsg || data.msg).replace(/\n/g, '<br>')}</div><div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div></div>`;
+            container.innerHTML = `<div class="message-card"><div class="sender">— ${data.displayName || data.name} —</div><div class="content">${(data.displayMsg || data.msg).replace(/\n/g, '<br>')}</div><div class="wedding-tag">Love in the air @ Mandarin Oriental Taipei</div></div>`;
             if (initialLocalPhase && currentIndex === localMsgs.length - 1) { initialLocalPhase = false; currentIndex = 0; } 
             else { currentIndex = (currentIndex + 1) % (initialLocalPhase ? localMsgs.length : (messages.length || 1)); }
         }
