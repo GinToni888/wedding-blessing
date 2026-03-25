@@ -233,7 +233,7 @@ export default function App() {
             Stanley & Maggie
           </h1>
           <p className="text-sm text-gray-500 uppercase tracking-widest">
-            Wedding Gallery • 2026.10.24
+            Wedding Gallery
           </p>
         </div>
       </header>
