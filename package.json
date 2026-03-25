@@ -1,0 +1,24 @@
+{
+  "name": "wedding-blessing",
+  "version": "1.0.0",
+  "description": "wedding-blessing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GinToni888/wedding-blessing.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GinToni888/wedding-blessing/issues"
+  },
+  "homepage": "https://github.com/GinToni888/wedding-blessing#readme",
+  "dependencies": {
+    "firebase": "^12.11.0"
+  }
+}
