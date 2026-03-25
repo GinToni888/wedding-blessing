@@ -106,7 +106,7 @@ export default function App() {
     }
     
     const pwd = window.prompt('請輸入新人專屬密碼解鎖最高權限：');
-    if (pwd === '20250506') { // 密碼已更改為結婚登記日 20250506
+    if (pwd === '20260506') { // 密碼已更改為結婚登記日 20250506
       setIsAdmin(true);
       localStorage.setItem('weddingAdmin', 'true');
       alert('✨ 歡迎新娘/新郎！最高管理權限已開啟。您現在可以刪除任何照片與一鍵打包下載。');
@@ -231,7 +231,7 @@ export default function App() {
             {isAdmin && <ShieldCheck size={20} className="inline-block ml-2 text-rose-500 mb-2" />}
           </h1>
           <p className="text-sm text-gray-500 uppercase tracking-widest">
-            Wedding Gallery • 2026.10.24
+            Wedding Gallery
           </p>
         </div>
       </header>
