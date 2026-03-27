@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie & Stanley Wedding Wall - Natural Wrap</title>
+    <title>Maggie & Stanley Wedding Wall - Master Mix</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
@@ -17,17 +17,19 @@
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* ✨ 最終鎖定 1300x550 比例 */
+        /* 📍 取用 Blossom.html 尺寸 (1050px) */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
         .message-card { 
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; 
-            outline: 14px solid rgba(255, 255, 255, 0.5); padding: 50px 100px; 
-            width: 1300px; height: 550px; 
+            outline: 12px solid rgba(255, 255, 255, 0.5); padding: 70px 80px; 
+            width: 1050px; /* Blossom 寬度 */
+            min-height: 550px; 
             display: flex; flex-direction: column; justify-content: center;
-            text-align: center; box-shadow: 0 40px 90px rgba(0,0,0,0.08); border-radius: 4px; 
+            text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; 
             animation: cardEnter 2.5s forwards; 
         }
 
+        /* 📍 取用 Test.html 字體 (42px/40px) */
         .sender { 
             font-family: "STFangsong", serif !important; 
             font-size: 42px; font-weight: 800; color: var(--sage-green); 
@@ -36,21 +38,18 @@
         
         .content { 
             font-family: "STFangsong", serif !important; 
-            font-size: 40px; font-weight: 600; line-height: 1.7; 
+            font-size: 40px; font-weight: 600; line-height: 1.6; 
             color: var(--text-color); margin-bottom: 25px; 
-            /* ✨ 自然換行設定 */
-            word-wrap: break-word; 
-            overflow-wrap: break-word; 
-            white-space: pre-wrap;
+            word-wrap: break-word; white-space: pre-wrap;
             display: flex; align-items: center; justify-content: center;
             flex-grow: 1;
         }
 
-        .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 20px; color: var(--gold); }
-        .page-indicator { font-size: 18px; color: var(--gold); margin-bottom: 10px; opacity: 0.7; font-weight: bold; }
+        .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 18px; color: var(--gold); }
+        .page-indicator { font-size: 16px; color: var(--gold); margin-bottom: 10px; opacity: 0.7; font-weight: bold; }
 
         @keyframes cardEnter { 
-            from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(12px); } 
+            from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(10px); } 
             to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
         }
     </style>
@@ -98,4 +97,106 @@
                 let targetX = currentDir === 1 ? window.innerWidth - 150 : 150;
                 let duration = gsap.utils.random(18, 26);
                 gsap.to(el, {
-                    x: targetX
+                    x: targetX, y: `+=${gsap.utils.random(-150, 150)}`, duration: duration, ease: "sine.inOut",
+                    onUpdate: () => {
+                        let curX = gsap.getProperty(el, "x");
+                        let inTreeZone = curX > window.innerWidth * 0.83;
+                        let treeScale = inTreeZone ? baseScale * 0.7 : baseScale;
+                        let flip = (currentDir === nativeDir) ? treeScale : -treeScale;
+                        gsap.to(el, { scaleX: flip, scaleY: treeScale, duration: 1.2, overwrite: 'auto' });
+                    },
+                    onComplete: turnAround
+                });
+            }
+            function turnAround() { currentDir *= -1; let flipTarget = (currentDir === nativeDir) ? baseScale : -baseScale; gsap.to(el, { scaleX: flipTarget, duration: 0.8, onComplete: fly }); }
+            fly();
+        }
+
+        // --- ✉️ 文字處理：✨ 每行 30 字 + 每頁 5 行分頁 ---
+        function processText(text) {
+            if (!text) return [""];
+            const rawLines = text.toString().split('\n');
+            let formattedLines = [];
+            
+            // 📍 換行邏輯：每行最多 30 字
+            rawLines.forEach(line => {
+                if (line.length === 0) { formattedLines.push(""); } 
+                else {
+                    for (let i = 0; i < line.length; i += 30) {
+                        formattedLines.push(line.substring(i, i + 30));
+                    }
+                }
+            });
+
+            // 📍 分頁機制：每頁最多 5 行
+            let pages = [];
+            for (let i = 0; i < formattedLines.length; i += 5) {
+                pages.push(formattedLines.slice(i, i + 5).join('\n'));
+            }
+            return pages.length > 0 ? pages : [""];
+        }
+
+        function rotateMessage() {
+            const container = document.getElementById('card-container');
+            let dataList = (initialLocalPhase || messages.length === 0) ? localMsgs : messages;
+            
+            if (currentIndex >= dataList.length) {
+                currentIndex = 0; currentSubPage = 0;
+            }
+            
+            const data = dataList[currentIndex];
+            if (!data) return;
+
+            const pages = processText(data.displayMsg || data.msg || "");
+            const currentPageText = pages[currentSubPage] || "";
+            const pageInfo = pages.length > 1 ? `<div class="page-indicator">Part ${currentSubPage + 1} / ${pages.length}</div>` : "";
+
+            container.innerHTML = `
+                <div class="message-card">
+                    <div class="sender">— ${data.displayName || data.name || "賓客"} —</div>
+                    ${pageInfo}
+                    <div class="content"><span>${currentPageText.toString().replace(/\n/g, '<br>')}</span></div>
+                    <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div>
+                </div>`;
+
+            if (currentSubPage < pages.length - 1) {
+                currentSubPage++;
+            } else {
+                currentSubPage = 0;
+                if (initialLocalPhase && currentIndex === localMsgs.length - 1) { 
+                    initialLocalPhase = false; currentIndex = 0; 
+                } else { 
+                    currentIndex = (currentIndex + 1) % dataList.length; 
+                }
+            }
+        }
+
+        async function fetchMessages() {
+            try {
+                const res = await fetch(`${gasUrl}?t=${Date.now()}`);
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    let filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
+                    const pr = (filtered.length > 0 ? filtered : data).map(item => ({ name: item.賓客姓名 || item.name || "賓客", msg: item.祝福語 || item.msg || "" }));
+                    
+                    let lc = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
+                    let mixed = [], lC = 0;
+                    pr.forEach((p, i) => { 
+                        mixed.push({ displayName: p.name, displayMsg: p.msg }); 
+                        if ((i + 1) % 15 === 0) { mixed.push(lc[lC % lc.length]); lC++; } 
+                    });
+                    if (pr.length > 0 && pr.length % 15 !== 0) mixed.push(lc[lC % lc.length]);
+                    if (mixed.length > 0) messages = mixed;
+                }
+            } catch (e) { console.warn("Sync skipped."); }
+        }
+
+        window.onload = () => {
+            document.getElementById('bg-blurred').classList.add('is-clear');
+            initButterflies();
+            rotateMessage(); setInterval(rotateMessage, 12000); 
+            fetchMessages(); setInterval(fetchMessages, 60000);
+        };
+    </script>
+</body>
+</html>
