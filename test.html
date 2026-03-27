@@ -18,44 +18,40 @@
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* 卡片容器：因應大字調整尺寸 */
+        /* 卡片容器：✨ 鎖定 1200x650 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
         .message-card { 
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; 
-            outline: 14px solid rgba(255, 255, 255, 0.5); padding: 80px 100px; 
-            width: 1200px; 
-            height: 750px; /* 📍 為 50px 字體提供充足空間 */
+            outline: 12px solid rgba(255, 255, 255, 0.5); padding: 50px 80px; 
+            width: 1200px; /* 📍 定調寬度 */
+            height: 650px; /* 📍 定調高度 */
             display: flex; flex-direction: column; justify-content: center;
             text-align: center; box-shadow: 0 40px 90px rgba(0,0,0,0.08); border-radius: 4px; 
             animation: cardEnter 2.5s forwards; 
         }
 
-        /* 📍 您可以在這裡直接修改標題字體 */
         .sender { 
             font-family: "STFangsong", serif !important; 
-            font-size: 50px;      /* 標題字級 */
-            font-weight: 800;     /* 極粗體 */
+            font-size: 42px; font-weight: 800; 
             color: var(--sage-green); 
-            margin-bottom: 30px; letter-spacing: 0.25em; 
+            margin-bottom: 25px; letter-spacing: 0.25em; 
         }
         
-        /* 📍 您可以在這裡直接修改內容字體 */
         .content { 
             font-family: "STFangsong", serif !important; 
-            font-size: 50px;      /* 內容字級 */
-            font-weight: 600;     /* 中粗體 */
-            line-height: 1.6;     /* 縮小行高以維持緊湊感 */
-            color: var(--text-color); margin-bottom: 30px; 
+            font-size: 40px; font-weight: 600; 
+            line-height: 1.7; 
+            color: var(--text-color); margin-bottom: 25px; 
             word-wrap: break-word; white-space: pre-wrap;
             display: flex; align-items: center; justify-content: center;
             flex-grow: 1;
         }
 
-        .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 22px; color: var(--gold); }
-        .page-indicator { font-size: 20px; color: var(--gold); margin-bottom: 15px; opacity: 0.7; font-weight: bold; }
+        .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 20px; color: var(--gold); }
+        .page-indicator { font-size: 18px; color: var(--gold); margin-bottom: 10px; opacity: 0.7; font-weight: bold; }
 
         @keyframes cardEnter { 
-            from { opacity: 0; transform: translateY(40px) scale(0.97); filter: blur(15px); } 
+            from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(12px); } 
             to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
         }
     </style>
@@ -72,7 +68,7 @@
         
         const localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
-            { name: "Maggie & Stanley", msg: "感謝你們溫暖的祝福，祝大家玩得開心\n We are deeply touched by your warm blessings.\n Have fun 🥂" }
+            { name: "Maggie & Stanley", msg: "We are deeply touched by your warm blessings.\n祝大家玩得開心\n Have fun 🥂" }
         ];
         
         let messages = [], currentIndex = 0, currentSubPage = 0, initialLocalPhase = true;
@@ -118,15 +114,18 @@
             fly();
         }
 
-        // --- ✉️ 排版管家：18字換行 + 5行分頁 ---
+        // --- ✉️ 文字處理器：✨ 每行 20 字 + 每頁 5 行 ---
         function processText(text) {
             const rawLines = text.split('\n');
             let formattedLines = [];
+            
+            // 修正：每行 20 字
             rawLines.forEach(line => {
-                for (let i = 0; i < line.length; i += 18) {
-                    formattedLines.push(line.substring(i, i + 18));
+                for (let i = 0; i < line.length; i += 20) {
+                    formattedLines.push(line.substring(i, i + 20));
                 }
             });
+
             let pages = [];
             for (let i = 0; i < formattedLines.length; i += 5) {
                 pages.push(formattedLines.slice(i, i + 5).join('\n'));
@@ -148,45 +147,4 @@
                     <div class="sender">— ${data.displayName || data.name} —</div>
                     ${pageInfo}
                     <div class="content"><span>${currentPageText.replace(/\n/g, '<br>')}</span></div>
-                    <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div>
-                </div>`;
-
-            if (currentSubPage < pages.length - 1) {
-                currentSubPage++;
-            } else {
-                currentSubPage = 0;
-                if (initialLocalPhase && currentIndex === localMsgs.length - 1) { 
-                    initialLocalPhase = false; currentIndex = 0; 
-                } else { 
-                    currentIndex = (currentIndex + 1) % (initialLocalPhase ? localMsgs.length : (messages.length || 1)); 
-                }
-            }
-        }
-
-        async function fetchMessages() {
-            try {
-                const res = await fetch(`${gasUrl}?t=${Date.now()}`);
-                const data = await res.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    let filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
-                    const pr = (filtered.length > 0 ? filtered : data).map(item => ({ name: item.賓客姓名 || item.name || "賓客", msg: item.祝福語 || item.msg || "" }));
-                    let lc = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg })), mixed = [], lC = 0;
-                    pr.forEach((p, i) => { 
-                        mixed.push({ displayName: p.name, displayMsg: p.msg }); 
-                        if ((i + 1) % 15 === 0) { mixed.push(lc[lC % lc.length]); lC++; } 
-                    });
-                    if (pr.length % 15 !== 0) mixed.push(lc[lC % lc.length]);
-                    messages = mixed;
-                }
-            } catch (e) {}
-        }
-
-        window.onload = () => {
-            document.getElementById('bg-blurred').classList.add('is-clear');
-            initButterflies();
-            rotateMessage(); setInterval(rotateMessage, 12000);
-            fetchMessages(); setInterval(fetchMessages, 60000);
-        };
-    </script>
-</body>
-</html>
+                    <div class="wedding-tag">Forever Love 2026.04 @
