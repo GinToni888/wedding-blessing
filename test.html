@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie & Stanley Wedding Wall - Test</title>
+    <title>Maggie & Stanley Wedding Wall - Stable</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
@@ -10,7 +10,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100vw; height: 100vh; overflow: hidden; background-color: var(--cream-bg); font-family: "Playfair Display", "STFangsong", "華康儷中宋", serif; }
 
-        /* 背景與蝴蝶 */
+        /* 背景與層級 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
         #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; }
         .is-clear { opacity: 0; }
@@ -21,21 +21,19 @@
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
         .message-card { 
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; 
-            outline: 12px solid rgba(255, 255, 255, 0.5); padding: 50px 80px; 
+            outline: 14px solid rgba(255, 255, 255, 0.5); padding: 50px 90px; 
             width: 1300px; height: 650px; 
             display: flex; flex-direction: column; justify-content: center;
             text-align: center; box-shadow: 0 40px 90px rgba(0,0,0,0.08); border-radius: 4px; 
             animation: cardEnter 2.5s forwards; 
         }
 
-        /* 📍 標題 42px / 特粗 */
         .sender { 
             font-family: "STFangsong", serif !important; 
             font-size: 42px; font-weight: 800; color: var(--sage-green); 
             margin-bottom: 25px; letter-spacing: 0.25em; 
         }
         
-        /* 📍 內容 40px / 中粗 */
         .content { 
             font-family: "STFangsong", serif !important; 
             font-size: 40px; font-weight: 600; line-height: 1.7; 
@@ -112,22 +110,19 @@
             fly();
         }
 
-        // --- ✉️ 文字處理器 (修復死循環與空值問題) ---
+        // --- ✉️ 文字處理邏輯 ---
         function processText(text) {
             if (!text) return [""];
-            const rawLines = text.split('\n');
+            const rawLines = text.toString().split('\n');
             let formattedLines = [];
-            
             rawLines.forEach(line => {
-                if (line.length === 0) {
-                    formattedLines.push(""); // 保留空行
-                } else {
+                if (!line) { formattedLines.push(""); } 
+                else {
                     for (let i = 0; i < line.length; i += 20) {
                         formattedLines.push(line.substring(i, i + 20));
                     }
                 }
             });
-
             let pages = [];
             for (let i = 0; i < formattedLines.length; i += 5) {
                 pages.push(formattedLines.slice(i, i + 5).join('\n'));
@@ -137,31 +132,38 @@
 
         function rotateMessage() {
             const container = document.getElementById('card-container');
-            const dataList = (initialLocalPhase || messages.length === 0) ? localMsgs : messages;
-            const data = dataList[currentIndex];
+            // 安全防護：決定資料源
+            let dataList = (initialLocalPhase || messages.length === 0) ? localMsgs : messages;
             
+            // 安全防護：如果索引超標，重置
+            if (currentIndex >= dataList.length) {
+                currentIndex = 0;
+                currentSubPage = 0;
+            }
+            
+            const data = dataList[currentIndex];
             if (!data) return;
 
             const pages = processText(data.displayMsg || data.msg || "");
             const currentPageText = pages[currentSubPage] || "";
             const pageInfo = pages.length > 1 ? `<div class="page-indicator">Part ${currentSubPage + 1} / ${pages.length}</div>` : "";
 
-            // 渲染 HTML
             container.innerHTML = `
                 <div class="message-card">
                     <div class="sender">— ${data.displayName || data.name || "賓客"} —</div>
                     ${pageInfo}
-                    <div class="content"><span>${currentPageText.replace(/\n/g, '<br>')}</span></div>
+                    <div class="content"><span>${currentPageText.toString().replace(/\n/g, '<br>')}</span></div>
                     <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div>
                 </div>`;
 
-            // 分頁邏輯切換
+            // 分頁邏輯
             if (currentSubPage < pages.length - 1) {
                 currentSubPage++;
             } else {
                 currentSubPage = 0;
                 if (initialLocalPhase && currentIndex === localMsgs.length - 1) { 
-                    initialLocalPhase = false; currentIndex = 0; 
+                    initialLocalPhase = false; 
+                    currentIndex = 0; 
                 } else { 
                     currentIndex = (currentIndex + 1) % dataList.length; 
                 }
@@ -178,17 +180,19 @@
                     
                     let lc = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
                     let mixed = [], lC = 0;
-                    
                     pr.forEach((p, i) => { 
                         mixed.push({ displayName: p.name, displayMsg: p.msg }); 
                         if ((i + 1) % 15 === 0) { mixed.push(lc[lC % lc.length]); lC++; } 
                     });
                     if (pr.length > 0 && pr.length % 15 !== 0) mixed.push(lc[lC % lc.length]);
                     
-                    if (mixed.length > 0) messages = mixed;
+                    if (mixed.length > 0) {
+                        messages = mixed;
+                        console.log("Messages synced:", messages.length);
+                    }
                 }
             } catch (e) {
-                console.error("Fetch failed:", e);
+                console.warn("Sync skipped - check GAS permission.");
             }
         }
 
@@ -196,7 +200,7 @@
             document.getElementById('bg-blurred').classList.add('is-clear');
             initButterflies();
             rotateMessage(); 
-            setInterval(rotateMessage, 12000); // 12秒輪播一次
+            setInterval(rotateMessage, 12000); 
             fetchMessages(); 
             setInterval(fetchMessages, 60000);
         };
