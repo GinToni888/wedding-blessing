@@ -18,38 +18,44 @@
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* 卡片容器 */
+        /* 卡片容器：因應大字調整尺寸 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
         .message-card { 
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; 
-            outline: 12px solid rgba(255, 255, 255, 0.5); padding: 80px 110px; width: 1050px; 
-            min-height: 520px; display: flex; flex-direction: column; justify-content: center;
-            text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; 
+            outline: 14px solid rgba(255, 255, 255, 0.5); padding: 80px 100px; 
+            width: 1200px; 
+            height: 750px; /* 📍 為 50px 字體提供充足空間 */
+            display: flex; flex-direction: column; justify-content: center;
+            text-align: center; box-shadow: 0 40px 90px rgba(0,0,0,0.08); border-radius: 4px; 
             animation: cardEnter 2.5s forwards; 
         }
 
-        /* 📍 在這邊修改字體大小 (px) 與加粗 (weight) */
+        /* 📍 您可以在這裡直接修改標題字體 */
         .sender { 
             font-family: "STFangsong", serif !important; 
-            font-size: 52px;      /* <--- 修改寄件人大小 */
-            font-weight: 800;     /* <--- 修改寄件人加粗 (700-900) */
-            color: var(--sage-green); margin-bottom: 30px; letter-spacing: 0.25em; 
+            font-size: 50px;      /* 標題字級 */
+            font-weight: 800;     /* 極粗體 */
+            color: var(--sage-green); 
+            margin-bottom: 30px; letter-spacing: 0.25em; 
         }
         
+        /* 📍 您可以在這裡直接修改內容字體 */
         .content { 
             font-family: "STFangsong", serif !important; 
-            font-size: 50px;      /* <--- 修改祝福語大小 */
-            font-weight: 600;     /* <--- 修改祝福語加粗 (500-700) */
-            line-height: 1.8; color: var(--text-color); margin-bottom: 40px; 
+            font-size: 50px;      /* 內容字級 */
+            font-weight: 600;     /* 中粗體 */
+            line-height: 1.6;     /* 縮小行高以維持緊湊感 */
+            color: var(--text-color); margin-bottom: 30px; 
             word-wrap: break-word; white-space: pre-wrap;
-            min-height: 280px;    /* 確保 5 行的高度穩定 */
+            display: flex; align-items: center; justify-content: center;
+            flex-grow: 1;
         }
 
-        .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 18px; color: var(--gold); }
-        .page-indicator { font-size: 14px; color: var(--gold); margin-top: -25px; margin-bottom: 20px; opacity: 0.6; }
+        .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 22px; color: var(--gold); }
+        .page-indicator { font-size: 20px; color: var(--gold); margin-bottom: 15px; opacity: 0.7; font-weight: bold; }
 
         @keyframes cardEnter { 
-            from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(10px); } 
+            from { opacity: 0; transform: translateY(40px) scale(0.97); filter: blur(15px); } 
             to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
         }
     </style>
@@ -71,7 +77,7 @@
         
         let messages = [], currentIndex = 0, currentSubPage = 0, initialLocalPhase = true;
 
-        // --- 🦋 蝴蝶 AI 系統 (保持不變) ---
+        // --- 🦋 蝴蝶 AI ---
         const bfFiles = ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif', 'bf1_R.gif', 'bf2_R.gif'];
         let activeBfs = [];
         function initButterflies() {
@@ -112,12 +118,18 @@
             fly();
         }
 
-        // --- ✉️ 自動分頁輪播系統 ---
-        function getPages(text, limit = 5) {
-            const lines = text.split('\n');
+        // --- ✉️ 排版管家：18字換行 + 5行分頁 ---
+        function processText(text) {
+            const rawLines = text.split('\n');
+            let formattedLines = [];
+            rawLines.forEach(line => {
+                for (let i = 0; i < line.length; i += 18) {
+                    formattedLines.push(line.substring(i, i + 18));
+                }
+            });
             let pages = [];
-            for (let i = 0; i < lines.length; i += limit) {
-                pages.push(lines.slice(i, i + limit).join('\n'));
+            for (let i = 0; i < formattedLines.length; i += 5) {
+                pages.push(formattedLines.slice(i, i + 5).join('\n'));
             }
             return pages;
         }
@@ -127,23 +139,22 @@
             const data = initialLocalPhase ? localMsgs[currentIndex] : messages[currentIndex];
             if (!data) return;
 
-            const pages = getPages(data.displayMsg || data.msg, 5);
+            const pages = processText(data.displayMsg || data.msg);
             const currentPageText = pages[currentSubPage];
-            const pageInfo = pages.length > 1 ? `<div class="page-indicator">( 第 ${currentSubPage + 1} / ${pages.length} 頁 )</div>` : "";
+            const pageInfo = pages.length > 1 ? `<div class="page-indicator">Part ${currentSubPage + 1} / ${pages.length}</div>` : "";
 
             container.innerHTML = `
                 <div class="message-card">
                     <div class="sender">— ${data.displayName || data.name} —</div>
                     ${pageInfo}
-                    <div class="content">${currentPageText.replace(/\n/g, '<br>')}</div>
+                    <div class="content"><span>${currentPageText.replace(/\n/g, '<br>')}</span></div>
                     <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div>
                 </div>`;
 
-            // 判斷是否還有下一頁
             if (currentSubPage < pages.length - 1) {
-                currentSubPage++; // 下次輪播顯示同一人的下一頁
+                currentSubPage++;
             } else {
-                currentSubPage = 0; // 重置子分頁，準備換下一位賓客
+                currentSubPage = 0;
                 if (initialLocalPhase && currentIndex === localMsgs.length - 1) { 
                     initialLocalPhase = false; currentIndex = 0; 
                 } else { 
