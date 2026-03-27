@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie & Stanley Wedding Wall - Hybrid Version</title>
+    <title>Maggie & Stanley Wedding Wall - Elegant</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
@@ -10,39 +10,38 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100vw; height: 100vh; overflow: hidden; background-color: var(--cream-bg); font-family: "Playfair Display", "STFangsong", "華康儷中宋", serif; }
 
-        /* 背景與蝴蝶 */
+        /* 背景與蝴蝶層 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
         #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; }
         .is-clear { opacity: 0; }
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* ✨ 卡片尺寸：回歸 Blossom 的 1150px 與 彈性高度 */
+        /* ✨ 字卡尺寸：1150px 定調 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
         .message-card { 
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; 
-            outline: 12px solid rgba(255, 255, 255, 0.5); padding: 70px 90px; 
-            width: 1150px; /* 回歸 Blossom 寬度 */
-            height: auto;  /* 📍 彈性高度 */
+            outline: 12px solid rgba(255, 255, 255, 0.5); 
+            padding: 70px 105px; /* 📍 左右 105px (約 3 個字元寬) */
+            width: 1150px;        /* 📍 寬度定調 */
+            height: auto; 
             min-height: 480px; 
             display: flex; flex-direction: column; justify-content: center;
             text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; 
             animation: cardEnter 2.5s forwards; 
         }
 
-        /* 📍 標題：取用 Test 大小 (37px) 但不加粗 */
+        /* 📍 標題 37px / 不加粗 */
         .sender { 
             font-family: "STFangsong", serif !important; 
-            font-size: 37px; 
-            font-weight: 500; /* 📍 移除特粗，改用中等細緻權重 */
+            font-size: 37px; font-weight: 500; 
             color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.25em; 
         }
         
-        /* 📍 內容：取用 Test 大小 (35px) 但不加粗 */
+        /* 📍 內容 35px / 不加粗 */
         .content { 
             font-family: "STFangsong", serif !important; 
-            font-size: 35px; 
-            font-weight: 400; /* 📍 移除加粗，回復自然細緻質感 */
+            font-size: 35px; font-weight: 400; 
             line-height: 1.7; color: var(--text-color); margin-bottom: 25px; 
             word-wrap: break-word; white-space: pre-wrap;
             display: flex; align-items: center; justify-content: center;
@@ -50,10 +49,10 @@
         }
 
         .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 18px; color: var(--gold); }
-        .page-indicator { font-size: 16px; color: var(--gold); margin-bottom: 10px; opacity: 0.6; font-weight: bold; }
+        .page-indicator { font-size: 16px; color: var(--gold); margin-bottom: 12px; opacity: 0.6; font-weight: bold; }
 
         @keyframes cardEnter { 
-            from { opacity: 0; transform: translateY(40px) scale(0.98); filter: blur(10px); } 
+            from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(10px); } 
             to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
         }
     </style>
@@ -75,7 +74,7 @@
         
         let messages = [], currentIndex = 0, currentSubPage = 0, initialLocalPhase = true;
 
-       // --- 🦋 蝴蝶系統 ---
+        // --- 🦋 蝴蝶系統 ---
         const bfFiles = ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif', 'bf1_R.gif', 'bf2_R.gif'];
         let activeBfs = [];
         function initButterflies() {
@@ -116,24 +115,23 @@
             fly();
         }
 
-        // --- ✉️ 文字處理器：✨ 每行 30 字 + ✨ 每頁 5 行 ---
+        // --- ✉️ 文字處理器：✨ 每行 26 字 + ✨ 每頁 5 行 ---
         function processText(text) {
             if (!text) return [""];
             const rawLines = text.toString().split('\n');
             let formattedLines = [];
             
-            // 📍 換行邏輯調整為 30 字
+            // 📍 配合 1150px 與 35px 字體，每行調整為 26 字以維持 3 字元留白感
             rawLines.forEach(line => {
                 if (line.length === 0) {
                     formattedLines.push("");
                 } else {
-                    for (let i = 0; i < line.length; i += 30) {
-                        formattedLines.push(line.substring(i, i + 30));
+                    for (let i = 0; i < line.length; i += 26) {
+                        formattedLines.push(line.substring(i, i + 26));
                     }
                 }
             });
 
-            // 📍 分頁機制維持 5 行
             let pages = [];
             for (let i = 0; i < formattedLines.length; i += 5) {
                 pages.push(formattedLines.slice(i, i + 5).join('\n'));
