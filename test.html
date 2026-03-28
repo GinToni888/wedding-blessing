@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie & Stanley Wedding Wall - Elegant</title>
+    <title>Maggie & Stanley Wedding Wall - Smart Layout</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
@@ -10,20 +10,20 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100vw; height: 100vh; overflow: hidden; background-color: var(--cream-bg); font-family: "Playfair Display", "STFangsong", "華康儷中宋", serif; }
 
-        /* 背景與蝴蝶層 */
+        /* 背景與蝴蝶 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
         #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; }
         .is-clear { opacity: 0; }
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* ✨ 字卡尺寸：1150px 定調 */
+        /* ✨ 鎖定 1150px 定調 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
         .message-card { 
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; 
             outline: 12px solid rgba(255, 255, 255, 0.5); 
-            padding: 70px 105px; /* 📍 左右 105px (約 3 個字元寬) */
-            width: 1150px;        /* 📍 寬度定調 */
+            padding: 70px 105px; /* 📍 左右 105px 呼吸留白 */
+            width: 1150px; 
             height: auto; 
             min-height: 480px; 
             display: flex; flex-direction: column; justify-content: center;
@@ -31,22 +31,27 @@
             animation: cardEnter 2.5s forwards; 
         }
 
-        /* 📍 標題 37px / 不加粗 */
+        /* 📍 標題 37px */
         .sender { 
             font-family: "STFangsong", serif !important; 
             font-size: 37px; font-weight: 500; 
             color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.25em; 
         }
         
-        /* 📍 內容 35px / 不加粗 */
+        /* 📍 內容 35px */
         .content { 
             font-family: "STFangsong", serif !important; 
             font-size: 35px; font-weight: 400; 
             line-height: 1.7; color: var(--text-color); margin-bottom: 25px; 
-            word-wrap: break-word; white-space: pre-wrap;
+            word-wrap: break-word; 
+            overflow-wrap: break-word; 
+            white-space: pre-wrap;
             display: flex; align-items: center; justify-content: center;
             flex-grow: 1;
+            width: 100%;
         }
+        
+        .content span { width: 100%; display: block; }
 
         .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 18px; color: var(--gold); }
         .page-indicator { font-size: 16px; color: var(--gold); margin-bottom: 12px; opacity: 0.6; font-weight: bold; }
@@ -115,19 +120,20 @@
             fly();
         }
 
-        // --- ✉️ 文字處理器：✨ 每行 26 字 + ✨ 每頁 5 行 ---
+        // --- ✉️ 文字處理器：優化後的智慧排版 ---
         function processText(text) {
             if (!text) return [""];
             const rawLines = text.toString().split('\n');
             let formattedLines = [];
             
-            // 📍 配合 1150px 與 35px 字體，每行調整為 26 字以維持 3 字元留白感
+            // 📍 智慧分段：不再硬切 26 字，改為 50 字保險（讓 CSS 自己處理換行）
             rawLines.forEach(line => {
                 if (line.length === 0) {
                     formattedLines.push("");
                 } else {
-                    for (let i = 0; i < line.length; i += 26) {
-                        formattedLines.push(line.substring(i, i + 26));
+                    // 這裡的 50 是為了防止極長的一串文字不換行導致分頁失效
+                    for (let i = 0; i < line.length; i += 50) {
+                        formattedLines.push(line.substring(i, i + 50));
                     }
                 }
             });
