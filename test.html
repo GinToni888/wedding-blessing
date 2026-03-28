@@ -27,18 +27,14 @@
             display: flex; align-items: center; justify-content: center; z-index: 500;
         }
 
-       /* ✨ ✨ ✨ 📍 改用「百分比」控制婚紗照樣式 */
+        /* ✨ ✨ ✨ 📍 去背婚紗照樣式 */
         .couple-illustration {
             position: absolute;
-            /* 📍 位置：使用百分比座標 (相對於 1920x1080) */
-            bottom: -60%;  /* 稍微出鏡，增加構圖張力 */
-            left: -3%;    
-            
-            /* 📍 大小：直接決定佔畫面的寬度比例 */
-            width: 38%;   /* 這是妳要的 1.5 倍體感寬度 (約 1575px) */
+            bottom: -3%;  
+            left: -2%;    
+            width:38%;   
             height: auto;
-            
-            z-index: 600; /* 確保在最前端 */
+            z-index: 600; 
             filter: drop-shadow(0 25px 50px rgba(0,0,0,0.15));
             pointer-events: none; 
             will-change: transform;
@@ -47,7 +43,7 @@
         #butterfly-layer { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* ✨ 字卡：1300px / 深層毛玻璃 / 0.6透明 */
+        /* ✨ 字卡：1300px / 深層毛玻璃 / 0.6透明 / 📍 往上上浮 5% (54px) */
         .message-card { 
             position: relative; 
             background: rgba(255, 255, 255, 0.6); 
@@ -58,8 +54,10 @@
             width: 1300px; height: auto; min-height: 520px; 
             display: flex; flex-direction: column; justify-content: center;
             text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.04); border-radius: 4px; 
+            /* 📍 ✨ 新增：預設位置上移 */
+            transform: translateY(-54px); 
             animation: cardEnter 2.5s forwards; 
-            z-index: 400; /* 📍 字卡在似顏繪之下 */
+            z-index: 400; 
         }
 
         .message-card.welcome-theme {
@@ -67,31 +65,15 @@
             outline-color: rgba(255, 248, 231, 0.3) !important;
         }
 
-        /* 📍 標題 42px / 不加粗 */
-        .sender { 
-            font-family: "STFangsong", serif !important; 
-            font-size: 42px; font-weight: 500; 
-            color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.25em; 
-        }
-        
-        /* 📍 內容 40px / 不加粗 / ✨ 解除硬切，智慧換行 */
-        .content { 
-            font-family: "STFangsong", serif !important; 
-            font-size: 40px; font-weight: 400; line-height: 1.7; 
-            color: var(--text-color); margin-bottom: 25px; 
-            word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; 
-            display: flex; align-items: center; justify-content: center;
-            flex-grow: 1; width: 100%;
-        }
-        
-        .content span { width: 100%; display: block; }
-
+        .sender { font-family: "STFangsong", serif !important; font-size: 42px; font-weight: 500; color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.25em; }
+        .content { font-family: "STFangsong", serif !important; font-size: 40px; font-weight: 400; line-height: 1.7; color: var(--text-color); margin-bottom: 25px; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; flex-grow: 1; width: 100%; }
         .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 20px; color: var(--gold); }
         .page-indicator { font-size: 18px; color: var(--gold); margin-bottom: 15px; opacity: 0.6; font-weight: bold; }
 
+        /* 📍 ✨ 更新動畫路徑：終點設為 -54px */
         @keyframes cardEnter { 
-            from { opacity: 0; transform: translateY(40px) scale(0.98); filter: blur(15px); } 
-            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
+            from { opacity: 0; transform: translateY(-14px) scale(0.98); filter: blur(15px); } 
+            to { opacity: 1; transform: translateY(-54px) scale(1); filter: blur(0px); } 
         }
     </style>
 </head>
@@ -102,7 +84,6 @@
 
     <div id="stage">
         <img src="couple-photo2.png" alt="Maggie & Stanley Illustration" class="couple-illustration">
-        
         <div id="butterfly-layer"></div>
         <div id="card-container"></div>
     </div>
@@ -113,7 +94,7 @@
         const localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
             { name: "Maggie & Stanley", msg: "We are deeply touched by your warm blessings.\n祝大家玩得開心 🥂 Have fun " },
-            { name: "Maggie & Stanley", msg: "如果你也想給我們祝福，請按Line選單進入線上留言" }
+            { name: "Maggie & Stanley", msg: "如果你也想給我們祝福\n請按Line選單進入線上留言" }
         ];
 
         function adjustScale() {
@@ -166,7 +147,6 @@
             fly();
         }
 
-        // --- ✉️ 文字處理器：✨ 解除 JS 硬切限制 ---
         function processText(text) {
             if (!text) return [""];
             const rawLines = text.toString().split('\n');
