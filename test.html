@@ -27,19 +27,20 @@
             display: flex; align-items: center; justify-content: center; z-index: 500;
         }
 
-        /* ✨ ✨ ✨ 📍 新增：去背婚紗照（似顏繪）樣式 */
+       /* ✨ ✨ ✨ 📍 改用「百分比」控制婚紗照樣式 */
         .couple-illustration {
             position: absolute;
-            /* 錨定在左下角 (2x4網格的第1/8等分區域) */
-            bottom: -180px; 
-            left: -60px; 
-            /* 📍 ✨ 建議最大寬度為 450px，確保大氣且不遮擋文字 */
-            max-width: 1250px; 
+            /* 📍 位置：使用百分比座標 (相對於 1920x1080) */
+            bottom: -40%;  /* 稍微出鏡，增加構圖張力 */
+            left: 0%;    
+            
+            /* 📍 大小：直接決定佔畫面的寬度比例 */
+            width: 25%;   /* 這是妳要的 1.5 倍體感寬度 (約 1575px) */
             height: auto;
-            z-index: 600; /* ✨ ✨ 📍 確保它在字卡、蝴蝶的最前端 */
-            /* 📍 強化陰影，呈現精品畫報質感 */
-            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.12));
-            pointer-events: none; /* 防止賓客誤觸 */
+            
+            z-index: 600; /* 確保在最前端 */
+            filter: drop-shadow(0 25px 50px rgba(0,0,0,0.15));
+            pointer-events: none; 
             will-change: transform;
         }
 
