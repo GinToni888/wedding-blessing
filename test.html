@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie & Stanley Wedding Wall - Intelligence</title>
+    <title>Maggie & Stanley Wedding Wall - Premium Illustration</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
@@ -19,7 +19,7 @@
         #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; }
         .is-clear { opacity: 0; }
 
-        /* 📍 虛擬畫布：保證現場投影比例與筆電一致 */
+        /* 📍 虛擬畫布：保證飯店投影比例與筆電一致 */
         #stage {
             position: absolute; width: 1920px; height: 1080px;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -27,26 +27,43 @@
             display: flex; align-items: center; justify-content: center; z-index: 500;
         }
 
+        /* ✨ ✨ ✨ 📍 新增：去背婚紗照（似顏繪）樣式 */
+        .couple-illustration {
+            position: absolute;
+            /* 錨定在左下角 (2x4網格的第1/8等分區域) */
+            bottom: 60px; 
+            left: 60px; 
+            /* 📍 ✨ 建議最大寬度為 450px，確保大氣且不遮擋文字 */
+            max-width: 450px; 
+            height: auto;
+            z-index: 600; /* ✨ ✨ 📍 確保它在字卡、蝴蝶的最前端 */
+            /* 📍 強化陰影，呈現精品畫報質感 */
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.12));
+            pointer-events: none; /* 防止賓客誤觸 */
+            will-change: transform;
+        }
+
         #butterfly-layer { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* ✨ 字卡：1300px / 毛玻璃質感 / 彈性高度 */
+        /* ✨ 字卡：1250px / 深層毛玻璃 / 0.6透明 */
         .message-card { 
             position: relative; 
-            background: rgba(255, 255, 255, 0.62); 
+            background: rgba(255, 255, 255, 0.6); 
             backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
-            border: 1px solid rgba(255, 255, 255, 0.4); 
-            outline: 14px solid rgba(255, 255, 255, 0.3); 
-            padding: 75px 105px; /* 📍 左右保留 105px 寬度 */
-            width: 1300px; height: auto; min-height: 520px; 
+            border: 1px solid rgba(255, 255, 255, 0.3); 
+            outline: 14px solid rgba(255, 255, 255, 0.2); 
+            padding: 90px 130px; 
+            width: 1250px; height: auto; min-height: 520px; 
             display: flex; flex-direction: column; justify-content: center;
-            text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.06); border-radius: 4px; 
+            text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.04); border-radius: 4px; 
             animation: cardEnter 2.5s forwards; 
+            z-index: 400; /* 📍 字卡在似顏繪之下 */
         }
 
         .message-card.welcome-theme {
-            background: rgba(255, 248, 231, 0.62) !important;
-            outline-color: rgba(255, 248, 231, 0.4) !important;
+            background: rgba(255, 248, 231, 0.65) !important;
+            outline-color: rgba(255, 248, 231, 0.3) !important;
         }
 
         /* 📍 標題 42px / 不加粗 */
@@ -56,19 +73,17 @@
             color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.25em; 
         }
         
-        /* 📍 內容 40px / 不加粗 / ✨ 自然流動換行 */
+        /* 📍 內容 40px / 不加粗 / ✨ 解除硬切，智慧換行 */
         .content { 
             font-family: "STFangsong", serif !important; 
             font-size: 40px; font-weight: 400; line-height: 1.7; 
             color: var(--text-color); margin-bottom: 25px; 
-            /* ✨ 智慧感應 CSS 設定 */
-            word-wrap: break-word; 
-            overflow-wrap: break-word; 
-            white-space: pre-wrap; 
+            word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; 
             display: flex; align-items: center; justify-content: center;
-            flex-grow: 1; /* 📍 強制垂直置中 */
-            width: 100%;
+            flex-grow: 1; width: 100%;
         }
+        
+        .content span { width: 100%; display: block; }
 
         .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 20px; color: var(--gold); }
         .page-indicator { font-size: 18px; color: var(--gold); margin-bottom: 15px; opacity: 0.6; font-weight: bold; }
@@ -85,6 +100,8 @@
     <div id="bg-blurred"></div>
 
     <div id="stage">
+        <img src="couple-photo.png" alt="Maggie & Stanley Illustration" class="couple-illustration">
+        
         <div id="butterfly-layer"></div>
         <div id="card-container"></div>
     </div>
@@ -108,7 +125,6 @@
 
         let messages = [], currentIndex = 0, currentSubPage = 0, initialLocalPhase = true;
 
-        // --- 🦋 蝴蝶系統 (1920x1080 區域) ---
         const bfFiles = ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif', 'bf1_R.gif', 'bf2_R.gif'];
         let activeBfs = [];
         function initButterflies() {
@@ -153,19 +169,9 @@
         function processText(text) {
             if (!text) return [""];
             const rawLines = text.toString().split('\n');
-            let formattedLines = [];
-            rawLines.forEach(line => {
-                if (line.length === 0) formattedLines.push("");
-                else {
-                    // 📍 放寬至 50 字，讓 CSS 決定換行，僅作為分頁基準
-                    for (let i = 0; i < line.length; i += 50) {
-                        formattedLines.push(line.substring(i, i + 50));
-                    }
-                }
-            });
             let pages = [];
-            for (let i = 0; i < formattedLines.length; i += 5) {
-                pages.push(formattedLines.slice(i, i + 5).join('\n'));
+            for (let i = 0; i < rawLines.length; i += 5) {
+                pages.push(rawLines.slice(i, i + 5).join('\n'));
             }
             return pages;
         }
