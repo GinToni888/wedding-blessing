@@ -2,62 +2,85 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie & Stanley Wedding Wall - Smart Layout</title>
+    <title>Maggie & Stanley Wedding Wall - Perfect Scale</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root { --cream-bg: #fdfaf5; --sage-green: #7d8c78; --gold: #c5a059; --text-color: #4a4a4a; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100vw; height: 100vh; overflow: hidden; background-color: var(--cream-bg); font-family: "Playfair Display", "STFangsong", "華康儷中宋", serif; }
+        
+        /* 📍 核心：讓背景永遠填滿真實螢幕 */
+        body, html { 
+            width: 100%; height: 100%; overflow: hidden; 
+            background-color: var(--cream-bg); 
+            font-family: "Playfair Display", "STFangsong", "華康儷中宋", serif; 
+        }
 
-        /* 背景與蝴蝶 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
         #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 2; filter: blur(25px); transform: scale(1.1); transition: opacity 5s ease-in-out; }
         .is-clear { opacity: 0; }
-        #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
-        .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* ✨ 鎖定 1300px 定調 */
-        #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
-        .message-card { 
-            position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; 
-            outline: 12px solid rgba(255, 255, 255, 0.5); 
-            padding: 70px 105px; /* 📍 左右 105px 呼吸留白 */
-            width: 1300px; 
-            height: auto; 
-            min-height: 480px; 
-            display: flex; flex-direction: column; justify-content: center;
-            text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,0.07); border-radius: 4px; 
-            animation: cardEnter 2.5s forwards; 
+        /* 📍 虛擬畫布：鎖定 1920x1080 比例，由 JS 動態縮放 */
+        #stage {
+            position: absolute;
+            width: 1920px;
+            height: 1080px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
         }
 
-        /* 📍 標題 40px */
+        #butterfly-layer { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
+        .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
+
+        /* ✨ 字卡：毛玻璃精緻化設定 */
+        .message-card { 
+            position: relative; 
+            /* 📍 透明度與模糊的黃金比例 */
+            background: rgba(255, 255, 255, 0.82); 
+            backdrop-filter: blur(18px); 
+            -webkit-backdrop-filter: blur(18px); /* 蘋果設備相容 */
+            
+            border: 1px solid rgba(255, 255, 255, 0.4); 
+            outline: 14px solid rgba(255, 255, 255, 0.3); 
+            padding: 75px 105px; 
+            width: 1150px; height: auto; min-height: 520px; 
+            display: flex; flex-direction: column; justify-content: center;
+            text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.06); border-radius: 4px; 
+            animation: cardEnter 2.5s forwards; 
+            transition: all 1.2s ease-in-out;
+        }
+
+        /* 歡迎卡專用色（維持淡奶油黃，但加入透明模糊） */
+        .message-card.welcome-theme {
+            background: rgba(255, 248, 231, 0.88) !important;
+            outline-color: rgba(255, 248, 231, 0.4) !important;
+        }
+
         .sender { 
             font-family: "STFangsong", serif !important; 
-            font-size: 40px; font-weight: 500; 
+            font-size: 42px; font-weight: 500; /* 📍 標題 42px */
             color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.25em; 
         }
         
-        /* 📍 內容 37px */
         .content { 
             font-family: "STFangsong", serif !important; 
-            font-size: 37px; font-weight: 400; 
+            font-size: 40px; font-weight: 400; /* 📍 內容 40px */
             line-height: 1.7; color: var(--text-color); margin-bottom: 25px; 
-            word-wrap: break-word; 
-            overflow-wrap: break-word; 
-            white-space: pre-wrap;
-            display: flex; align-items: center; justify-content: center;
-            flex-grow: 1;
-            width: 100%;
+            word-wrap: break-word; white-space: pre-wrap;
+            display: flex; align-items: center; justify-content: center; flex-grow: 1;
         }
-        
-        .content span { width: 100%; display: block; }
 
-        .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 18px; color: var(--gold); }
-        .page-indicator { font-size: 16px; color: var(--gold); margin-bottom: 12px; opacity: 0.6; font-weight: bold; }
+        .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 20px; color: var(--gold); }
+        .page-indicator { font-size: 18px; color: var(--gold); margin-bottom: 15px; opacity: 0.6; font-weight: bold; }
 
         @keyframes cardEnter { 
-            from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(10px); } 
+            from { opacity: 0; transform: translateY(40px) scale(0.98); filter: blur(15px); } 
             to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
         }
     </style>
@@ -66,17 +89,33 @@
 
     <div id="bg-sharp"></div>
     <div id="bg-blurred"></div>
-    <div id="butterfly-layer"></div>
-    <div id="display-wrapper"><div id="card-container"></div></div>
+
+    <div id="stage">
+        <div id="butterfly-layer"></div>
+        <div id="card-container"></div>
+    </div>
 
     <script>
         const gasUrl = "https://script.google.com/macros/s/AKfycby-P94fg0kooAipQFNCgBejG2EFx0JDT-8gC0A6mlEwISuEyUpyqBJk6XTrAR7FXGcWvQ/exec";
         
         const localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
-            { name: "Maggie & Stanley", msg: "We are deeply touched by your warm blessings.\n祝大家玩得開心\n Have fun 🥂" }
+            { name: "Maggie & Stanley", msg: "We are deeply touched by your warm blessings.\n祝大家玩得開心" },
+            { name: "Maggie & Stanley", msg: "Have fun 🥂\n Forever Love 2026" }
         ];
-        
+
+        // 📍 ✨ 全螢幕縮放矩陣邏輯
+        function adjustScale() {
+            const stage = document.getElementById('stage');
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            // 以 1920x1080 為基準計算縮放比例
+            const scale = Math.min(winW / 1920, winH / 1080);
+            stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        }
+        window.addEventListener('resize', adjustScale);
+        adjustScale();
+
         let messages = [], currentIndex = 0, currentSubPage = 0, initialLocalPhase = true;
 
         // --- 🦋 蝴蝶系統 ---
@@ -97,18 +136,18 @@
         }
         function animateButterfly(el, nativeDir) {
             let currentDir = nativeDir; let baseScale = gsap.utils.random(0.7, 0.9); 
-            let startX = currentDir === 1 ? -150 : window.innerWidth + 150;
-            let startY = gsap.utils.random(150, window.innerHeight - 250);
+            let startX = currentDir === 1 ? -150 : 1920 + 150;
+            let startY = gsap.utils.random(150, 1080 - 250);
             gsap.set(el, { x: startX, y: startY, scaleX: (currentDir === nativeDir ? baseScale : -baseScale), scaleY: baseScale, opacity: 0 });
             gsap.to(el, { opacity: 1, duration: 2 });
             function fly() {
-                let targetX = currentDir === 1 ? window.innerWidth - 150 : 150;
+                let targetX = currentDir === 1 ? 1920 - 150 : 150;
                 let duration = gsap.utils.random(18, 26);
                 gsap.to(el, {
                     x: targetX, y: `+=${gsap.utils.random(-150, 150)}`, duration: duration, ease: "sine.inOut",
                     onUpdate: () => {
                         let curX = gsap.getProperty(el, "x");
-                        let inTreeZone = curX > window.innerWidth * 0.83;
+                        let inTreeZone = curX > 1920 * 0.83;
                         let treeScale = inTreeZone ? baseScale * 0.7 : baseScale;
                         let flip = (currentDir === nativeDir) ? treeScale : -treeScale;
                         gsap.to(el, { scaleX: flip, scaleY: treeScale, duration: 1.2, overwrite: 'auto' });
@@ -120,24 +159,19 @@
             fly();
         }
 
-        // --- ✉️ 文字處理器：優化後的智慧排版 ---
+        // --- ✉️ 文字處理器 ---
         function processText(text) {
             if (!text) return [""];
             const rawLines = text.toString().split('\n');
             let formattedLines = [];
-            
-            // 📍 智慧分段：不再硬切 26 字，改為 50 字保險（讓 CSS 自己處理換行）
             rawLines.forEach(line => {
-                if (line.length === 0) {
-                    formattedLines.push("");
-                } else {
-                    // 這裡的 50 是為了防止極長的一串文字不換行導致分頁失效
-                    for (let i = 0; i < line.length; i += 50) {
-                        formattedLines.push(line.substring(i, i + 50));
+                if (line.length === 0) formattedLines.push("");
+                else {
+                    for (let i = 0; i < line.length; i += 26) {
+                        formattedLines.push(line.substring(i, i + 26));
                     }
                 }
             });
-
             let pages = [];
             for (let i = 0; i < formattedLines.length; i += 5) {
                 pages.push(formattedLines.slice(i, i + 5).join('\n'));
@@ -148,29 +182,24 @@
         function rotateMessage() {
             const container = document.getElementById('card-container');
             let dataList = (initialLocalPhase || messages.length === 0) ? localMsgs : messages;
-            
-            if (currentIndex >= dataList.length) {
-                currentIndex = 0; currentSubPage = 0;
-            }
-            
+            if (currentIndex >= dataList.length) { currentIndex = 0; currentSubPage = 0; }
             const data = dataList[currentIndex];
             if (!data) return;
 
             const pages = processText(data.displayMsg || data.msg || "");
             const currentPageText = pages[currentSubPage] || "";
             const pageInfo = pages.length > 1 ? `<div class="page-indicator">Part ${currentSubPage + 1} / ${pages.length}</div>` : "";
+            const themeClass = initialLocalPhase ? " welcome-theme" : "";
 
             container.innerHTML = `
-                <div class="message-card">
+                <div class="message-card${themeClass}">
                     <div class="sender">— ${data.displayName || data.name || "賓客"} —</div>
                     ${pageInfo}
                     <div class="content"><span>${currentPageText.toString().replace(/\n/g, '<br>')}</span></div>
                     <div class="wedding-tag">Forever Love @ Mandarin Oriental Taipei</div>
                 </div>`;
 
-            if (currentSubPage < pages.length - 1) {
-                currentSubPage++;
-            } else {
+            if (currentSubPage < pages.length - 1) { currentSubPage++; } else {
                 currentSubPage = 0;
                 if (initialLocalPhase && currentIndex === localMsgs.length - 1) { 
                     initialLocalPhase = false; currentIndex = 0; 
@@ -187,7 +216,6 @@
                 if (Array.isArray(data) && data.length > 0) {
                     let filtered = data.filter(item => Object.values(item).some(v => v && v.toString().toLowerCase().trim() === 'ok'));
                     const pr = (filtered.length > 0 ? filtered : data).map(item => ({ name: item.賓客姓名 || item.name || "賓客", msg: item.祝福語 || item.msg || "" }));
-                    
                     let lc = localMsgs.map(m => ({ displayName: m.name, displayMsg: m.msg }));
                     let mixed = [], lC = 0;
                     pr.forEach((p, i) => { 
@@ -197,12 +225,12 @@
                     if (pr.length > 0 && pr.length % 15 !== 0) mixed.push(lc[lC % lc.length]);
                     if (mixed.length > 0) messages = mixed;
                 }
-            } catch (e) { console.warn("Sync skipped."); }
+            } catch (e) {}
         }
 
         window.onload = () => {
             document.getElementById('bg-blurred').classList.add('is-clear');
-            initButterflies();
+            adjustScale(); initButterflies();
             rotateMessage(); setInterval(rotateMessage, 12000); 
             fetchMessages(); setInterval(fetchMessages, 60000);
         };
