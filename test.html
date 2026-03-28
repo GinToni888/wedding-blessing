@@ -17,13 +17,13 @@
         #butterfly-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* ✨ 鎖定 1150px 定調 */
+        /* ✨ 鎖定 1200px 定調 */
         #display-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 500; }
         .message-card { 
             position: relative; background: rgba(255, 255, 255, 0.96); border: 1px solid #f0f0f0; 
             outline: 12px solid rgba(255, 255, 255, 0.5); 
             padding: 70px 105px; /* 📍 左右 105px 呼吸留白 */
-            width: 1150px; 
+            width: 1200px; 
             height: auto; 
             min-height: 480px; 
             display: flex; flex-direction: column; justify-content: center;
@@ -165,7 +165,7 @@
                     <div class="sender">— ${data.displayName || data.name || "賓客"} —</div>
                     ${pageInfo}
                     <div class="content"><span>${currentPageText.toString().replace(/\n/g, '<br>')}</span></div>
-                    <div class="wedding-tag">Forever Love 2026.04 @ Mandarin Oriental Taipei</div>
+                    <div class="wedding-tag">Forever Love @ Mandarin Oriental Taipei</div>
                 </div>`;
 
             if (currentSubPage < pages.length - 1) {
