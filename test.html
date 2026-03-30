@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Maggie & Stanley Wedding Wall - Final Deploy</title>
+    <title>Maggie & Stanley Wedding Wall - Perfect Layout</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=Playfair+Display:italic,wght@0,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
@@ -12,14 +12,13 @@
         body, html { 
             width: 100%; height: 100%; overflow: hidden; 
             background-color: var(--cream-bg); 
-            /* 📍 ✨ 更新字體優先權 */
             font-family: "Playfair Display", "Noto Serif TC", serif; 
         }
 
-        /* 背景層修正：確保清晰層在最上面 */
+        /* 背景層：修正層級確保清晰 */
         #bg-sharp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 1; }
-        #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 5; filter: blur(25px); transform: scale(1.1); transition: opacity 4s ease-in-out; }
-        .is-clear { opacity: 0; pointer-events: none; }
+        #bg-blurred { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('wedding-bg.png') no-repeat center center; background-size: cover; z-index: 10; filter: blur(25px); transform: scale(1.1); transition: opacity 4s ease-in-out; }
+        .is-clear { opacity: 0 !important; pointer-events: none; }
 
         #stage {
             position: absolute; width: 1920px; height: 1080px;
@@ -29,7 +28,7 @@
         }
 
         .couple-illustration {
-            position: absolute; bottom: -50%; left: -2%; width: 33%; height: auto; z-index: 600; 
+            position: absolute; bottom: -55%; left: -2%; width: 36%; height: auto; z-index: 600; 
             filter: drop-shadow(0 25px 50px rgba(0,0,0,0.15));
             pointer-events: none; will-change: transform;
         }
@@ -37,15 +36,15 @@
         #butterfly-layer { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 100; overflow: hidden; }
         .butterfly { position: absolute; width: 60px !important; height: auto; will-change: transform; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); opacity: 0; }
 
-        /* ✨ 字卡：1400px / 毛玻璃 0.6 / 模糊 40px / 5% 上浮 */
+        /* ✨ 字卡：1400px / 上浮 5% */
         .message-card { 
             position: relative; 
             background: rgba(255, 255, 255, 0.6); 
             backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
             border: 1px solid rgba(255, 255, 255, 0.3); 
             outline: 14px solid rgba(255, 255, 255, 0.2); 
-            padding: 90px 130px; 
-            width: 1400px; height: auto; min-height: 520px; 
+            padding: 80px 110px; /* 稍微縮小內距以容納 60px 大字 */
+            width: 1400px; height: auto; min-height: 550px; 
             display: flex; flex-direction: column; justify-content: center;
             text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.04); border-radius: 4px; 
             transform: translateY(-54px); 
@@ -55,26 +54,22 @@
 
         .message-card.welcome-theme { background: rgba(255, 248, 231, 0.65) !important; outline-color: rgba(255, 248, 231, 0.3) !important; }
 
-        /* 📍 ✨ 標題 50px / 思源宋體 */
         .sender { 
-            font-family: "Noto Serif TC", serif !important; 
-            font-size: 50px; font-weight: 500; 
+            font-family: "Noto Serif TC", serif !important; font-size: 50px; font-weight: 500; 
             color: var(--sage-green); margin-bottom: 25px; letter-spacing: 0.25em; 
         }
         
-        /* 📍 ✨ 內容 60px / 思源宋體 */
         .content { 
-            font-family: "Noto Serif TC", serif !important; 
-            font-size: 60px; font-weight: 400; line-height: 1.7; 
+            font-family: "Noto Serif TC", serif !important; font-size: 60px; font-weight: 400; line-height: 1.6; 
             color: var(--text-color); margin-bottom: 25px; 
             word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; 
             display: flex; align-items: center; justify-content: center;
             flex-grow: 1; width: 100%;
-            max-height: 380px; overflow: hidden;
+            /* 📍 5行 60px 約為 480px 高 */
+            max-height: 480px; overflow: hidden;
         }
         
         .content span { width: 100%; display: block; }
-
         .wedding-tag { font-family: 'Playfair Display', serif !important; font-style: italic; font-size: 20px; color: var(--gold); }
         .page-indicator { font-size: 18px; color: var(--gold); margin-bottom: 15px; opacity: 0.6; font-weight: bold; }
 
@@ -90,7 +85,7 @@
     <div id="bg-blurred"></div>
 
     <div id="stage">
-        <img src="couple-photo2.png" alt="Wedding Illustration" class="couple-illustration">
+        <img src="couple-photo2.png" alt="Maggie & Stanley Illustration" class="couple-illustration">
         <div id="butterfly-layer"></div>
         <div id="card-container"></div>
     </div>
@@ -101,14 +96,14 @@
         const localMsgs = [
             { name: "Maggie & Stanley", msg: "歡迎來到我們的婚禮！\n Welcome to Stanley and Maggie's Wedding" },
             { name: "Maggie & Stanley", msg: "We are deeply touched by your warm blessings.\n祝大家玩得開心 🥂 Have fun " },
-            { name: "Maggie & Stanley", msg: "如果你也想給我們祝福\n 請按Line選單進入『線上祝福』留言" }
+            { name: "Maggie & Stanley", msg: "如果你也想給我們祝福，請按Line選單進入『線上祝福』留言" }
         ];
 
-        // 智慧縮放核心：下限 43px
+        // 📍 自動縮放腳本：鎖定 60px - 55px
         function autoScaleFont(element, maxHeight) {
             let fontSize = 60;
             element.style.fontSize = fontSize + "px";
-            while (element.scrollHeight > maxHeight && fontSize > 43) {
+            while (element.scrollHeight > maxHeight && fontSize > 55) {
                 fontSize--;
                 element.style.fontSize = fontSize + "px";
             }
@@ -124,6 +119,7 @@
 
         let messages = [], currentIndex = 0, currentSubPage = 0, initialLocalPhase = true;
 
+        // --- 🦋 蝴蝶系統 ---
         const bfFiles = ['bf1_L.gif', 'bf2_L.gif', 'bf3_L.gif', 'bf1_R.gif', 'bf2_R.gif'];
         let activeBfs = [];
         function initButterflies() {
@@ -164,12 +160,26 @@
             fly();
         }
 
+        // 📍 ✨ 智慧分頁處理器：預判 60px 下的 5 行限制
         function processText(text) {
             if (!text) return [""];
             const rawLines = text.toString().split('\n');
+            let smartLines = [];
+            
+            // 預判：在 1400px 下，每行大約容納 22 個 60px 的字
+            rawLines.forEach(line => {
+                if (line.length === 0) {
+                    smartLines.push("");
+                } else {
+                    for (let i = 0; i < line.length; i += 22) {
+                        smartLines.push(line.substring(i, i + 22));
+                    }
+                }
+            });
+
             let pages = [];
-            for (let i = 0; i < rawLines.length; i += 5) {
-                pages.push(rawLines.slice(i, i + 5).join('\n'));
+            for (let i = 0; i < smartLines.length; i += 5) {
+                pages.push(smartLines.slice(i, i + 5).join('\n'));
             }
             return pages;
         }
@@ -195,9 +205,11 @@
                 </div>`;
 
             const contentBox = container.querySelector('.content');
-            if (contentBox) autoScaleFont(contentBox, 380);
+            if (contentBox) autoScaleFont(contentBox, 480);
 
-            if (currentSubPage < pages.length - 1) { currentSubPage++; } else {
+            if (currentSubPage < pages.length - 1) { 
+                currentSubPage++; 
+            } else {
                 currentSubPage = 0;
                 if (initialLocalPhase && currentIndex === localMsgs.length - 1) { 
                     initialLocalPhase = false; currentIndex = 0; 
@@ -227,15 +239,21 @@
         }
 
         window.onload = () => {
-            // 📍 確保模糊背景圖一定會消失
+            // 背景淡出邏輯：從模糊到清晰
             const blurLayer = document.getElementById('bg-blurred');
             if(blurLayer) {
-                blurLayer.classList.add('is-clear');
-                setTimeout(() => { blurLayer.style.display = 'none'; }, 5000);
+                setTimeout(() => {
+                    blurLayer.classList.add('is-clear');
+                    // 動畫結束後徹底移除模糊層，保證背景絕對清晰
+                    setTimeout(() => { blurLayer.style.display = 'none'; }, 4000);
+                }, 500);
             }
-            adjustScale(); initButterflies();
-            rotateMessage(); setInterval(rotateMessage, 12000); 
-            fetchMessages(); setInterval(fetchMessages, 60000);
+            adjustScale(); 
+            initButterflies();
+            rotateMessage(); 
+            setInterval(rotateMessage, 12000); 
+            fetchMessages(); 
+            setInterval(fetchMessages, 60000);
         };
     </script>
 </body>
