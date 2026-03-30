@@ -87,11 +87,11 @@
             { name: "Maggie & Stanley", msg: "Share your blessings\n Scan the QR code on the table card\n Your words will be shown on screen." }
         ];
 
-        // 智慧縮放：60px - 46px
+        // 智慧縮放：60px - 42px
         function autoScaleFont(element, maxHeight) {
             let fontSize = 60;
             element.style.fontSize = fontSize + "px";
-            while (element.scrollHeight > maxHeight && fontSize > 46) {
+            while (element.scrollHeight > maxHeight && fontSize > 42) {
                 fontSize--;
                 element.style.fontSize = fontSize + "px";
             }
