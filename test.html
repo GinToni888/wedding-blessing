@@ -103,14 +103,14 @@
             stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
 
-        // 📍 每行字數預判：60px 大字在 1400px 寬度約 22 字
+        // 📍 每行字數預判：60px 大字在 1400px 寬度約 50 字
         function processText(text) {
             if (!text) return [""];
             const rawLines = text.toString().split('\n');
             let smartLines = [];
             rawLines.forEach(line => {
                 if (line.length === 0) smartLines.push("");
-                else { for (let i = 0; i < line.length; i += 22) { smartLines.push(line.substring(i, i + 22)); } }
+                else { for (let i = 0; i < line.length; i += 50) { smartLines.push(line.substring(i, i + 50)); } }
             });
             let pages = [];
             for (let i = 0; i < smartLines.length; i += 5) { pages.push(smartLines.slice(i, i + 5).join('\n')); }
