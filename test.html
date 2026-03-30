@@ -166,13 +166,13 @@
             const rawLines = text.toString().split('\n');
             let smartLines = [];
             
-            // 預判：在 1400px 下，每行大約容納 22 個 60px 的字
+            // 預判：在 1400px 下，每行大約容納 40 個 60px 的字
             rawLines.forEach(line => {
                 if (line.length === 0) {
                     smartLines.push("");
                 } else {
-                    for (let i = 0; i < line.length; i += 22) {
-                        smartLines.push(line.substring(i, i + 22));
+                    for (let i = 0; i < line.length; i += 40) {
+                        smartLines.push(line.substring(i, i + 40));
                     }
                 }
             });
