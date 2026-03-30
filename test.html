@@ -99,11 +99,11 @@
             { name: "Maggie & Stanley", msg: "如果你也想給我們祝福，請按Line選單進入『線上祝福』留言" }
         ];
 
-        // 📍 自動縮放腳本：鎖定 60px - 55px
+        // 📍 自動縮放腳本：鎖定 60px - 46px
         function autoScaleFont(element, maxHeight) {
             let fontSize = 60;
             element.style.fontSize = fontSize + "px";
-            while (element.scrollHeight > maxHeight && fontSize > 55) {
+            while (element.scrollHeight > maxHeight && fontSize > 46) {
                 fontSize--;
                 element.style.fontSize = fontSize + "px";
             }
